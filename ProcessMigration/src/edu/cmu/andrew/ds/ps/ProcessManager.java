@@ -33,10 +33,4 @@ public class ProcessManager {
 	 */
 	Set<Class<? extends MigratableProcess>> processClasses;
 	
-	/*
-	 * Everything starts from here!
-	 */
-	public static void main(String[] args) {
-		System.out.println("Nothing has been done now!");
-	}
 }
