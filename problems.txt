@@ -1,0 +1,3 @@
+some problems to solved:
+
+1. serialize的时候能否保存在waiting的信息？如果不能，在migrate标准标志为开时的io请求在migrate之后就完全丢失了。
