@@ -19,7 +19,7 @@ public class PMMain {
 		System.out.println("Nothing has been done now!");
 		
 		// change the file name to absolute path
-		TransactionalFileInputStream a = new TransactionalFileInputStream("input.txt");
+		TransactionalFileInputStream a = new TransactionalFileInputStream("./input.txt");
 		try {
 			a.setMigrated();
 			System.out.println(String.valueOf(a.read()));
