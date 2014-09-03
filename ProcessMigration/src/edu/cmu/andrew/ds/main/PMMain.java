@@ -1,7 +1,4 @@
-/**
- * 
- */
-package edu.cmu.andrew.ds.ps;
+package edu.cmu.andrew.ds.main;
 
 /**
  * Starting point of the whole project.
@@ -9,7 +6,7 @@ package edu.cmu.andrew.ds.ps;
  * @author KAIILANG CHEN
  * @author YANG PAN
  */
-public class MPMain {
+public class PMMain {
 
 	/*
 	 * Everything starts from here!
