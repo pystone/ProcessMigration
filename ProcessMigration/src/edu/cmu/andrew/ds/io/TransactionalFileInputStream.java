@@ -3,8 +3,10 @@ package edu.cmu.andrew.ds.io;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
 
 /**
  * To facilitate migrating processes with open files, you will need to implement a transactional I/O library.
@@ -31,52 +33,110 @@ public class TransactionalFileInputStream implements Serializable {
 	 * it any time a file handle is created or renewed.
 	 */
 	
-	// TODO: 1. add mutex to ensure atomic; 2. more read interfaces
-	private boolean _migrated = false;
+	// TODO: 1. more read interfaces
+	//		 2. what about the read requests emerging within the period that the isMigrating flag is set?
 	private FileChannel _in = null;
 	private long _pos = 0;
 	private Path _path = null;
-
+	private boolean _isReading = false;
+	private boolean _isMigrating = false;
 	
-	public TransactionalFileInputStream(String path) {
+	public TransactionalFileInputStream(String path, OpenOption... options) 
+			throws IOException {
 		_path = Paths.get(path);
+		_in = FileChannel.open(_path, options);
 	}
 	
-	public void setMigrated() {
-		_migrated = true;
-	}
-	
-	public void resetMigrated() {
-		_migrated = false;
-	}
-	
-	// read in one byte
-	public int read() throws IOException {
+	/* read in one byte */
+	public synchronized int read() throws IOException {
+		/* if is migrating, wait */
+		while (_isMigrating == true) {
+			System.out.println("waiting for completion of migration");
+			try {
+				wait();
+			} catch(InterruptedException e) { } 
+			finally { }
+		}
+		
+		/* set the reading lock to make sure it won't enter migrating mode */
+		setReading();
+		
 		ByteBuffer buf = ByteBuffer.allocate(1);
 		
-		try {
-			if (_in == null) {
-				System.out.println("open file: "+_path.toString());
-				_in = FileChannel.open(_path);
-				_in = _in.position(_pos);
-			}
-			
-			_in.read(buf);	// TODO: handle read in error
-			
-			/* After reading in, should use this method to get buffer ready to write */
-			buf.flip();
-			
-			_pos = _in.position();
-			if (_migrated) {
-				System.out.println("file closed");
-				_in.close();
-				_in = null;
-			}
-			return buf.get();
-			
-		}finally {
-			
+		if (_in.read(buf) == -1) {
+			notify();
+			return -1;
 		}
+		
+		/* after reading in, should use this method to get buffer ready to write */
+		buf.flip();
+	
+		/* notify other waiting threads before migrating */
+		notify();
+		
+		/* reset the reading lock to make it ready to enter migrating mode */
+		resetReading();
+		
+		return buf.get();
+	}
+	
+	/* suspend before migrate */
+	public synchronized void suspend() 
+			throws IOException {
+		/* ensure one instance is suspended only once */
+		if (_isMigrating == true) {
+			System.out.println("WARNING: try to suspend a suspended in stream!");
+			return;
+		}
+		
+		/* ensure no reading operation is working */
+		while (_isReading == true) {
+			System.out.println("waiting for reading lock");
+			try{
+				wait();
+			} catch(InterruptedException e) { } 
+			finally { }
+		}
+		_isMigrating = true;
+		
+		/* save and close current file description */
+		_pos = _in.position();
+		_in.close();
+		_in = null;
+		
+		// TODO: serialize other stuffs here
+		
+		System.out.println("in stream suspended");
+	}
+	
+	/* resume after migrate */
+	public synchronized void resume() 
+			throws IOException {
+		/* resuming a non-migrating stream is meaningless */
+		if (_isMigrating == false) {
+			System.out.println("WARNING: try to resume a non-migrating in stream!");
+			return;
+		}
+		
+		/* reopen the file descriptor and set the position */
+		_in = FileChannel.open(_path);
+		_in = _in.position(_pos);
+		
+		// TODO: deserialize other stuffs here
+		
+		/* mark the end of the migration and notify other waiting threads */
+		_isMigrating = false;
+		notify();
+		
+		System.out.println("in stream resumed");
+	}
+	
+	private void setReading() {
+		_isReading = true;
+	}
+	private synchronized void resetReading() {
+		_isReading = false;
+		notify();
 	}
 	
 }
