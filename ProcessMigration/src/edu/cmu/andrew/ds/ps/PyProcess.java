@@ -131,4 +131,10 @@ public class PyProcess implements MigratableProcess {
 		suspending = false;
 	}
 
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }
