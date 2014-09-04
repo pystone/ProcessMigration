@@ -20,28 +20,9 @@ public class PMMain {
 		System.out.println("Nothing has been done now!");
 		
 		PyProcess a = new PyProcess(0);
-		a.start();
+		a.run();
 		PyProcess b = new PyProcess(1);
-		b.start();
-		
-//		TransactionalFileInputStream a = new TransactionalFileInputStream("./input.txt");
-//		try {
-//			System.out.println(String.valueOf(a.read()));
-//			System.out.println(String.valueOf(a.read()));
-//			a.suspend();
-//			System.out.println(String.valueOf(a.read()));
-//			Thread.sleep(1000);
-//			System.out.println(String.valueOf(a.read()));
-//			a.resume();
-//			System.out.println(String.valueOf(a.read()));
-//			System.out.println(String.valueOf(a.read()));
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (InterruptedException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
+		b.run();
 		
 		System.out.println("Finish running!");
 	}

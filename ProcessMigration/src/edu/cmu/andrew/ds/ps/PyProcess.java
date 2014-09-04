@@ -11,8 +11,8 @@ public class PyProcess implements MigratableProcess {
 	 * It is safe to assume that the process will limit it’s I/O to files accessed 
      * via the TransactionalFileInputStream and TransactionalFileOutputStream classes
 	 */
-	static TransactionalFileInputStream _inputStream = null;
-	TransactionalFileOutputStream outputStream;
+	TransactionalFileInputStream _inputStream = null;
+	TransactionalFileOutputStream _outputStream = null;
 	private int _id;
 	private Thread t = null;
 	
@@ -27,16 +27,22 @@ public class PyProcess implements MigratableProcess {
 	
 	public PyProcess(int id) throws IOException {
 		_inputStream = new TransactionalFileInputStream("./input.txt");
+		_outputStream = new TransactionalFileOutputStream("./output.txt");
 		_id = id;
 	}
 	
 	public PyProcess() throws IOException {
 		_inputStream = new TransactionalFileInputStream("./input.txt");
+		_outputStream = new TransactionalFileOutputStream("./output.txt");
 		_id = 0;
 	}
 	
-	public void readAndPrintOneByte() throws IOException {
-		System.out.println(_id + ": " + _inputStream.read());
+	public void readAndPrintOneInt() throws IOException {
+		System.out.println(_id + ": " + Integer.toHexString(_inputStream.read()));
+	}
+	
+	public void writeOneInt(int b) throws IOException {
+		_outputStream.write(b);
 	}
 	
 	public void start() {
@@ -51,11 +57,20 @@ public class PyProcess implements MigratableProcess {
 	@Override
 	public void run() {
 		
+		try {
+			readAndPrintOneInt();
+			_outputStream.write(_inputStream.read());
+			_outputStream.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		/* TEST for reading lock
 		 * before test, add a sleep function in read()
 		if (_id == 0) {
 			try {
-				readAndPrintOneByte();
+				readAndPrintOneInt();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -65,7 +80,7 @@ public class PyProcess implements MigratableProcess {
 			try {
 				_inputStream.suspend();
 				_inputStream.resume();
-				readAndPrintOneByte();
+				readAndPrintOneInt();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -76,12 +91,12 @@ public class PyProcess implements MigratableProcess {
 		/* TEST for migration lock
 		if (_id == 0) {
 			try {
-				readAndPrintOneByte();
-				readAndPrintOneByte();
+				readAndPrintOneInt();
+				readAndPrintOneInt();
 				_inputStream.suspend();
 				Thread.sleep(2000);
 				_inputStream.resume();
-				readAndPrintOneByte();
+				readAndPrintOneInt();
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -93,12 +108,12 @@ public class PyProcess implements MigratableProcess {
 		}
 		else if (_id == 1) {
 			try {
-				readAndPrintOneByte();
+				readAndPrintOneInt();
 				_inputStream.suspend();
 				Thread.sleep(3000);
 				_inputStream.resume();
-				readAndPrintOneByte();
-				readAndPrintOneByte();
+				readAndPrintOneInt();
+				readAndPrintOneInt();
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

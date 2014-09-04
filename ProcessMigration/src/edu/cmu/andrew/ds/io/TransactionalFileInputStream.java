@@ -3,9 +3,10 @@ package edu.cmu.andrew.ds.io;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
+import static java.nio.file.StandardOpenOption.READ;
 
 
 /**
@@ -41,10 +42,10 @@ public class TransactionalFileInputStream implements Serializable {
 	private boolean _isReading = false;
 	private boolean _isMigrating = false;
 	
-	public TransactionalFileInputStream(String path, OpenOption... options) 
+	public TransactionalFileInputStream(String path) 
 			throws IOException {
 		_path = Paths.get(path);
-		_in = FileChannel.open(_path, options);
+		_in = FileChannel.open(_path, READ);
 	}
 	
 	/* read in one byte */
@@ -61,7 +62,7 @@ public class TransactionalFileInputStream implements Serializable {
 		/* set the reading lock to make sure it won't enter migrating mode */
 		setReading();
 		
-		ByteBuffer buf = ByteBuffer.allocate(1);
+		ByteBuffer buf = ByteBuffer.allocate(4);
 		
 		if (_in.read(buf) == -1) {
 			notify();
@@ -77,7 +78,7 @@ public class TransactionalFileInputStream implements Serializable {
 		/* reset the reading lock to make it ready to enter migrating mode */
 		resetReading();
 		
-		return buf.get();
+		return (((ByteBuffer)buf.rewind()).asIntBuffer()).get();
 	}
 	
 	/* suspend before migrate */
@@ -129,6 +130,10 @@ public class TransactionalFileInputStream implements Serializable {
 		notify();
 		
 		System.out.println("in stream resumed");
+	}
+	
+	public void close() throws IOException {
+		_in.close();
 	}
 	
 	private void setReading() {
