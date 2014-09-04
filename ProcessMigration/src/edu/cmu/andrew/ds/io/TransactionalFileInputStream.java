@@ -7,6 +7,8 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import edu.cmu.andrew.ds.ps.KcProcess;
+
 
 /**
  * To facilitate migrating processes with open files, you will need to implement a transactional I/O library.
@@ -26,6 +28,7 @@ import java.nio.file.Paths;
  */
 
 public class TransactionalFileInputStream implements Serializable {
+	private static final String TAG = TransactionalFileInputStream.class.getSimpleName();
 	
 	/*
 	 * In order to improve performance, you can also choose to “cache” these connections by reusing them, 

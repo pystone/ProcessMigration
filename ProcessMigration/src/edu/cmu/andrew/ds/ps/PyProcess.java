@@ -6,6 +6,7 @@ import edu.cmu.andrew.ds.io.TransactionalFileInputStream;
 import edu.cmu.andrew.ds.io.TransactionalFileOutputStream;
 
 public class PyProcess implements MigratableProcess {
+	private static final String TAG = PyProcess.class.getSimpleName();
 	
 	/*
 	 * It is safe to assume that the process will limit it’s I/O to files accessed 
@@ -15,6 +16,8 @@ public class PyProcess implements MigratableProcess {
 	TransactionalFileOutputStream outputStream;
 	private int _id;
 	private Thread t = null;
+	
+	private volatile boolean suspending;
 	
 	/*
 	 *  Every class implements MigratableProcess should have a such Constructor.
@@ -50,6 +53,7 @@ public class PyProcess implements MigratableProcess {
 
 	@Override
 	public void run() {
+		System.out.println(TAG + " : run()");
 		
 		/* TEST for reading lock
 		 * before test, add a sleep function in read()
@@ -109,12 +113,22 @@ public class PyProcess implements MigratableProcess {
 		}
 		*/
 
+		suspending = false;
 	}
 
 	@Override
 	public void suspend() {
-		// TODO Auto-generated method stub
-
+		System.out.println(TAG + " : suspend()");
+		
+		suspending = true;
+		while (suspending);
+	}
+	
+	@Override
+	public void resume() {
+		System.out.println(TAG + " : resume()");
+		
+		suspending = false;
 	}
 
 }

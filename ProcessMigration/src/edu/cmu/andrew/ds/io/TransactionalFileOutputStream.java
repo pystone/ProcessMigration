@@ -12,7 +12,8 @@ import java.io.Serializable;
  */
 
 public class TransactionalFileOutputStream  extends OutputStream implements Serializable {
-
+	private static final String TAG = TransactionalFileOutputStream.class.getSimpleName();
+	
 	/*
 	 * In order to improve performance, you can also choose to “cache” these connections by reusing them, 
 	 * unless a “migrated” flag is set, etc, in which case you would set the flag upon migration and reset

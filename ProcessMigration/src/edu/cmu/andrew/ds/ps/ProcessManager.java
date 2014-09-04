@@ -1,6 +1,18 @@
 package edu.cmu.andrew.ds.ps;
 
-import java.util.Set;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
 
 /**
  * You should create a ProcessManager to monitor for requests to launch, remove, and migrate processes.
@@ -27,10 +39,147 @@ import java.util.Set;
  */
 
 public class ProcessManager {
+	private static final String TAG = ProcessManager.class.getSimpleName();
 	
+	private static final String SERIALIZED_FILENAME = "PM.ser";
+	private String packageName;
 	/*
 	 * Instantiate process class until runtime by reflection.
 	 */
-	Set<Class<? extends MigratableProcess>> processClasses;
+	private MigratableProcess ps;
+	private Map<String, MigratableProcess> map = new ConcurrentHashMap<String, MigratableProcess>();
+		
+	private AtomicInteger pid; 
+	
+	/*
+	 * Singleton
+	 */
+	private static ProcessManager self;
+	synchronized public static ProcessManager getInstance() {
+		if(self == null) {
+			self = new ProcessManager();
+		}
+		return self;
+	}
+	
+	private ProcessManager() {
+		pid = new AtomicInteger(0);
+		packageName = this.getClass().getPackage().getName();
+	}
+	
+	public int generateID() {
+        return pid.getAndIncrement();
+    }
+	
+	public void startSvr() {
+		System.out.println("Type 'help' for more information");
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        System.out.print("> ");
+        while (true) {
+            String line = null;
+            try {
+                line = br.readLine();
+            } catch (IOException e) {
+            }
+            execCmd(line.split("\\s+"));
+            System.out.print("> ");
+        }
+	}
+	
+	private void execCmd(String[] arg) {
+		switch(arg[0]) {
+		case "st":
+			start(arg[1]);
+			break;
+		case "mg":
+			migrate(arg[1]);
+			break;
+		case "rs":
+			resume(arg[1]);
+			break;
+		case "ps":
+			display();
+			break;
+		default:
+			help();
+			break;	
+		}	
+	}
+	
+    private void start(String psName) {
+		try {
+			ps = (MigratableProcess) Class.forName(packageName+ "." + psName).getConstructor(String[].class).newInstance((Object)null);
+		} catch (InstantiationException | IllegalAccessException
+				| IllegalArgumentException | InvocationTargetException
+				| NoSuchMethodException | SecurityException
+				| ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+    	map.put(psName, ps);
+    	Thread thread = new Thread(ps);
+        thread.start();
+	}
+	
+	/*
+	 * 
+	 */
+	private void migrate(String psName) {
+		MigratableProcess ps = map.get(psName);
+		ps.suspend();
+		ObjectOutputStream out = null;
+		try {
+			out = new ObjectOutputStream(new FileOutputStream(SERIALIZED_FILENAME));
+			out.writeObject(ps);
+			out.flush();
+			out.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	/*
+	 * 
+	 */
+	private void resume(String psName) {		
+		ObjectInputStream in = null;
+		try {
+			in = new ObjectInputStream(new FileInputStream(SERIALIZED_FILENAME));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		Object obj = null;
+		try {
+			obj = in.readObject();
+		} catch (ClassNotFoundException | IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if (obj instanceof MigratableProcess) {
+			ps = (MigratableProcess) obj;
+			
+			Thread thread = new Thread(ps);
+	        thread.start();
+	        
+	        try {
+				in.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	/*
+	 * 
+	 */
+	private void display() {}
+	
+	public void help() {}
+	
 	
 }
