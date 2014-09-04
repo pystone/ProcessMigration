@@ -6,6 +6,7 @@ import edu.cmu.andrew.ds.io.TransactionalFileInputStream;
 import edu.cmu.andrew.ds.io.TransactionalFileOutputStream;
 
 public class PyProcess implements MigratableProcess {
+	private static final String TAG = PyProcess.class.getSimpleName();
 	
 	/*
 	 * It is safe to assume that the process will limit it’s I/O to files accessed 
@@ -16,13 +17,18 @@ public class PyProcess implements MigratableProcess {
 	private int _id;
 	private Thread t = null;
 	
+	private volatile boolean suspending;
+	
 	/*
 	 *  Every class implements MigratableProcess should have a such Constructor.
 	 *  
 	 *  Doing this cleans up the interface, and is more likely to lead to a 
 	 *  general-purpose framework than more complex options.
 	 */
-	public PyProcess(String[] str) {
+	public PyProcess(String[] str) throws IOException {
+		_inputStream = new TransactionalFileInputStream("./input.txt");
+		_outputStream = new TransactionalFileOutputStream("./output.txt");
+		_id = 0;
 	}
 	
 	public PyProcess(int id) throws IOException {
@@ -46,7 +52,7 @@ public class PyProcess implements MigratableProcess {
 	}
 	
 	public void start() {
-		System.out.println("Starting " +  _id );
+		System.out.println(TAG + "Starting " +  _id );
 		if (t == null)
 		{
 			t = new Thread (this, String.valueOf(_id));
@@ -56,6 +62,7 @@ public class PyProcess implements MigratableProcess {
 
 	@Override
 	public void run() {
+		System.out.println(TAG + " : run()");
 		
 		try {
 			readAndPrintOneInt();
@@ -124,12 +131,28 @@ public class PyProcess implements MigratableProcess {
 		}
 		*/
 
+		suspending = false;
 	}
 
 	@Override
 	public void suspend() {
-		// TODO Auto-generated method stub
+		System.out.println(TAG + " : suspend()");
+		
+		suspending = true;
+		while (suspending);
+	}
+	
+	@Override
+	public void resume() {
+		System.out.println(TAG + " : resume()");
+		
+		suspending = false;
+	}
 
+	@Override
+	public String toString() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

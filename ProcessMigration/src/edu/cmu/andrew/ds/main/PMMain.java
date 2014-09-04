@@ -1,9 +1,12 @@
 package edu.cmu.andrew.ds.main;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 
-import edu.cmu.andrew.ds.io.*;
-import edu.cmu.andrew.ds.ps.PyProcess;
+import edu.cmu.andrew.ds.ps.KcProcess;
+import edu.cmu.andrew.ds.ps.MigratableProcess;
+import edu.cmu.andrew.ds.ps.ProcessManager;
 
 /**
  * Starting point of the whole project.
@@ -16,13 +19,11 @@ public class PMMain {
 	/*
 	 * Everything starts from here!
 	 */
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
 		System.out.println("Nothing has been done now!");
 		
-		PyProcess a = new PyProcess(0);
-		a.run();
-		PyProcess b = new PyProcess(1);
-		b.run();
+		ProcessManager.getInstance().startSvr();		
+		
 		
 		System.out.println("Finish running!");
 	}

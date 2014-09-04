@@ -6,7 +6,11 @@ import java.nio.channels.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+<<<<<<< HEAD
 import static java.nio.file.StandardOpenOption.READ;
+=======
+import edu.cmu.andrew.ds.ps.KcProcess;
+>>>>>>> 237435b952f28b69b69aecdec6e169bdaf667a49
 
 
 /**
@@ -27,6 +31,7 @@ import static java.nio.file.StandardOpenOption.READ;
  */
 
 public class TransactionalFileInputStream implements Serializable {
+	private static final String TAG = TransactionalFileInputStream.class.getSimpleName();
 	
 	/*
 	 * In order to improve performance, you can also choose to “cache” these connections by reusing them, 

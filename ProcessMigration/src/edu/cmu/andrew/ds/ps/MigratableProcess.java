@@ -14,12 +14,14 @@ import java.io.Serializable;
  */
 
 public interface MigratableProcess extends Runnable, Serializable {
-		
+	
 	/*
 	 *  This method will be called before the object is serialized. 
 	 *  It affords an opportunity for the process to enter a known safe state.
 	 */
 	public void suspend();
+	
+	public void resume();
 	
 	/*
 	 *  This method can, for example, print the class name of the process 
