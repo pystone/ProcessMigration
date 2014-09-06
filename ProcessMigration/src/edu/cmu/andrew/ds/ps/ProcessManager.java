@@ -137,18 +137,9 @@ public class ProcessManager {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} finally {
+			map.remove(psName);
 		}
-		
-//		ObjectOutputStream out = null;
-//		try {
-//			out = new ObjectOutputStream(new FileOutputStream(SERIALIZED_FILENAME));
-//			out.writeObject(ps);
-//			out.flush();
-//			out.close();
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
 	}
 
 	/*
@@ -156,21 +147,6 @@ public class ProcessManager {
 	 */
 	private void resume(String psName) {	
 		Object obj = null;
-		
-//		ObjectInputStream in = null;
-//		try {
-//			in = new ObjectInputStream(new FileInputStream(SERIALIZED_FILENAME));
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//
-//		try {
-//			obj = in.readObject();
-//		} catch (ClassNotFoundException | IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
 		
 		try {
 			obj = _networkManager.receive();
@@ -182,15 +158,9 @@ public class ProcessManager {
 		if (obj instanceof MigratableProcess) {
 			ps = (MigratableProcess) obj;
 			
+			map.put(ps.getTag(), ps);
 			Thread thread = new Thread(ps);
 	        thread.start();
-	        
-//	        try {
-//				in.close();
-//			} catch (IOException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
 		}
 	}
 	

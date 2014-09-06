@@ -155,4 +155,8 @@ public class PyProcess implements MigratableProcess {
 		return null;
 	}
 
+	@Override
+	public String getTag() {
+		return TAG;
+	}
 }

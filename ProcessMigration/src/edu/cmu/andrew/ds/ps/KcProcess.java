@@ -58,4 +58,9 @@ public class KcProcess implements MigratableProcess {
 		
 		suspending = false;
 	}
+	
+	@Override
+	public String getTag() {
+		return TAG;
+	}
 }
