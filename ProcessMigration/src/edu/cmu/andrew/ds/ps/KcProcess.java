@@ -2,6 +2,11 @@ package edu.cmu.andrew.ds.ps;
 
 
 public class KcProcess implements MigratableProcess {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	private static final String TAG = KcProcess.class.getSimpleName();
 	
 	public int cnt;
@@ -14,8 +19,7 @@ public class KcProcess implements MigratableProcess {
 //	TransactionalFileOutputStream outputStream;
 	
 	private volatile boolean suspending;
-	private int id;
-	
+
 	/*
 	 *  Every class implements MigratableProcess should have a such Constructor.
 	 *  
@@ -30,7 +34,6 @@ public class KcProcess implements MigratableProcess {
 	@Override
 	public void run() {
 		System.out.println(TAG + " : run() begin, cnt = " + cnt);
-//		System.out.println(getClass().getName());
 		
 		while(!suspending) {
 			try {
@@ -60,8 +63,4 @@ public class KcProcess implements MigratableProcess {
 		suspending = false;
 	}
 	
-	@Override
-	public String getTag() {
-		return TAG;
-	}
 }

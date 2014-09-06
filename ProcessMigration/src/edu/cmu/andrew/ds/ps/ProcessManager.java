@@ -1,16 +1,9 @@
 package edu.cmu.andrew.ds.ps;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,19 +35,21 @@ import edu.cmu.andrew.ds.network.NetworkManager;
  *
  */
 
-public class ProcessManager {
+public class ProcessManager implements Runnable {
 	private static final String TAG = ProcessManager.class.getSimpleName();
-	private static int _pid = 0;
 	
 	private String packageName;
 	private NetworkManager _networkManager = null;
+	private Thread _receiver = null;
 	/*
 	 * Instantiate process class until runtime by reflection.
 	 */
 	private MigratableProcess ps;
-	private Map<Integer, MigratableProcess> _pmap = new ConcurrentHashMap<Integer, MigratableProcess>();
+	private volatile Map<Integer, MigratableProcess> _pmap = new ConcurrentHashMap<Integer, MigratableProcess>();
 		
-	private AtomicInteger pid; 
+	private volatile AtomicInteger _pid; 
+	
+	private volatile boolean _terminate = false;
 	
 	/*
 	 * Singleton
@@ -67,22 +62,18 @@ public class ProcessManager {
 		return self;
 	}
 	
-	private ProcessManager() {
-		pid = new AtomicInteger(0);
+	public ProcessManager() {
+		_pid = new AtomicInteger(0);
 		packageName = this.getClass().getPackage().getName();
 	}
 	
-	public int generateID() {
-        return pid.getAndIncrement();
-    }
-	
 	private void addProcess(MigratableProcess ps) {
-		_pmap.put(Integer.valueOf(_pid), ps);
-		++_pid;
+		_pmap.put(Integer.valueOf(_pid.getAndIncrement()), ps);
 	}
 	
 	private boolean deleteProcess(int idx) {
 		if (_pmap.remove(Integer.valueOf(idx)) == null) {
+			println("delete failed!");
 			return false;
 		}
 		return true;
@@ -92,13 +83,20 @@ public class ProcessManager {
 	public void startSvr(NetworkManager nwMgr) {
 		_networkManager = nwMgr;
 		System.out.println("Type 'help' for more information");
+		
+		/* create another thread to receive msg sent from network */
+		_receiver = new Thread(this);
+		_receiver.start();
+		
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         System.out.print("> ");
-        while (true) {
+        while (_terminate == false) {
             String line = null;
             try {
                 line = br.readLine();
             } catch (IOException e) {
+            	println("ERROR: read line failed!");
+            	return;
             }
             execCmd(line.split("\\s+"));
             System.out.print("> ");
@@ -107,17 +105,22 @@ public class ProcessManager {
 	
 	private void execCmd(String[] arg) {
 		switch(arg[0]) {
-		case "st":
-			start(arg[1]);
+		case "ct":
+			create(arg[1]);
 			break;
 		case "mg":
 			migrate(arg[1]);
 			break;
-		case "rs":
-			waitForImmigration();
-			break;
+//		case "rs":
+//			waitForImmigration();
+//			break;
 		case "ps":
 			display();
+			break;
+		case "st":
+			/* still cannot work appropriately */
+			_receiver.stop();
+			_terminate = true;
 			break;
 		default:
 			help();
@@ -125,7 +128,7 @@ public class ProcessManager {
 		}	
 	}
 	
-    private void start(String psName) {
+    private void create(String psName) {
 		try {
 			ps = (MigratableProcess) Class.forName(packageName+ "." + psName).getConstructor(String[].class).newInstance((Object)null);
 		} catch (InstantiationException | IllegalAccessException
@@ -144,12 +147,20 @@ public class ProcessManager {
 	
 	private void migrate(String strIdx) {
 		
-		int idx = Integer.parseInt(strIdx);
+		int idx = 0;
+		
+		try {
+			idx = Integer.parseInt(strIdx);
+		} catch (NumberFormatException e) {
+			println("ERROR: invalid pid(" + strIdx + "), not a number!");
+			return;
+		}
+		
 		
 		MigratableProcess ps = (MigratableProcess)_pmap.get(idx);
 		
 		if (ps == null) {
-			println("ERROR: try to migrate an invalid pid(" + idx + ")!");
+			println("ERROR: try to migrate a non-existing pid(" + idx + ")!");
 			return;
 		}
 		
@@ -168,28 +179,28 @@ public class ProcessManager {
 	}
 
 	
-	private void waitForImmigration() {
-		Object obj = null;
-		
-		try {
-			obj = _networkManager.receive();
-		} catch (ClassNotFoundException | IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		if (obj instanceof MigratableProcess) {
-			ps = (MigratableProcess) obj;
-			
-			addProcess(ps);
-
-			Thread thread = new Thread(ps);
-	        thread.start();
-	        
-	        println("Migrated from network successfully!");
-	        display();
-		}
-	}
+//	private void waitForImmigration() {
+//		Object obj = null;
+//		
+//		try {
+//			obj = _networkManager.receive();
+//		} catch (ClassNotFoundException | IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		
+//		if (obj instanceof MigratableProcess) {
+//			ps = (MigratableProcess) obj;
+//			
+//			addProcess(ps);
+//
+//			Thread thread = new Thread(ps);
+//	        thread.start();
+//	        
+//	        println("Migrated from network successfully!");
+//	        display();
+//		}
+//	}
 	
 	private void println(String msg) {
 		System.out.println(TAG + ": " + msg);
@@ -210,7 +221,36 @@ public class ProcessManager {
 		}
 	}
 	
-	public void help() {}
+	public void help() {
+		
+	}
+
+	@Override
+	public void run() {
+		/* wait for msg */
+		while (true) {
+			Object obj = null;
+			
+			try {
+				obj = _networkManager.receive();
+			} catch (ClassNotFoundException | IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			if (obj instanceof MigratableProcess) {
+				ps = (MigratableProcess) obj;
+				
+				addProcess(ps);
+
+				Thread thread = new Thread(ps);
+		        thread.start();
+		        
+		        println("Migrated from network successfully!");
+		        display();
+			}
+		}
+	}
 	
 	
 }

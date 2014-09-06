@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.nio.file.StandardOpenOption.SYNC;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -19,6 +20,11 @@ import static java.nio.file.StandardOpenOption.CREATE;
  */
 
 public class TransactionalFileOutputStream  extends OutputStream implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 4L;
+
 	private static final String TAG = TransactionalFileOutputStream.class.getSimpleName();
 	
 	/*
@@ -41,7 +47,7 @@ public class TransactionalFileOutputStream  extends OutputStream implements Seri
 	public synchronized void write(int b) throws IOException {
 		/* if is migrating, wait */
 		while (_isMigrating == true) {
-			System.out.println("waiting for completion of migration");
+			println("waiting for completion of migration");
 			try {
 				wait();
 			} catch(InterruptedException e) { } 
@@ -68,13 +74,13 @@ public class TransactionalFileOutputStream  extends OutputStream implements Seri
 			throws IOException {
 		/* ensure one instance is suspended only once */
 		if (_isMigrating == true) {
-			System.out.println("WARNING: try to suspend a suspended out stream!");
+			println("WARNING: try to suspend a suspended out stream!");
 			return;
 		}
 		
 		/* ensure no writing operation is working */
 		while (_isWriting == true) {
-			System.out.println("waiting for writing lock");
+			println("waiting for writing lock");
 			try{
 				wait();
 			} catch(InterruptedException e) { } 
@@ -89,7 +95,7 @@ public class TransactionalFileOutputStream  extends OutputStream implements Seri
 		
 		// TODO: serialize other stuffs here
 		
-		System.out.println("out stream suspended");
+		println("out stream suspended");
 	}
 	
 	/* resume after migrate */
@@ -97,7 +103,7 @@ public class TransactionalFileOutputStream  extends OutputStream implements Seri
 			throws IOException {
 		/* resuming a non-migrating stream is meaningless */
 		if (_isMigrating == false) {
-			System.out.println("WARNING: try to resume a non-migrating out stream!");
+			println("WARNING: try to resume a non-migrating out stream!");
 			return;
 		}
 		
@@ -111,7 +117,7 @@ public class TransactionalFileOutputStream  extends OutputStream implements Seri
 		_isMigrating = false;
 		notify();
 		
-		System.out.println("out stream resumed");
+		println("out stream resumed");
 	}
 	
 	public void close() throws IOException {
@@ -124,5 +130,9 @@ public class TransactionalFileOutputStream  extends OutputStream implements Seri
 	public synchronized void resetWriting() {
 		_isWriting = false;
 		notify();
+	}
+	
+	private void println(String msg) {
+		System.out.println(TAG + ": " + msg);
 	}
 }

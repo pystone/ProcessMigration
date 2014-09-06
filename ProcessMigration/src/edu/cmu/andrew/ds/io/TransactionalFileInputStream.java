@@ -28,6 +28,11 @@ import static java.nio.file.StandardOpenOption.READ;
  */
 
 public class TransactionalFileInputStream implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 3L;
+
 	private static final String TAG = TransactionalFileInputStream.class.getSimpleName();
 	
 	/*
@@ -54,7 +59,7 @@ public class TransactionalFileInputStream implements Serializable {
 	public synchronized int read() throws IOException {
 		/* if is migrating, wait */
 		while (_isMigrating == true) {
-			System.out.println("waiting for completion of migration");
+			println("waiting for completion of migration");
 			try {
 				wait();
 			} catch(InterruptedException e) { } 
@@ -88,13 +93,13 @@ public class TransactionalFileInputStream implements Serializable {
 			throws IOException {
 		/* ensure one instance is suspended only once */
 		if (_isMigrating == true) {
-			System.out.println("WARNING: try to suspend a suspended in stream!");
+			println("WARNING: try to suspend a suspended in stream!");
 			return;
 		}
 		
 		/* ensure no reading operation is working */
 		while (_isReading == true) {
-			System.out.println("waiting for reading lock");
+			println("waiting for reading lock");
 			try{
 				wait();
 			} catch(InterruptedException e) { } 
@@ -109,7 +114,7 @@ public class TransactionalFileInputStream implements Serializable {
 		
 		// TODO: serialize other stuffs here
 		
-		System.out.println("in stream suspended");
+		println("in stream suspended");
 	}
 	
 	/* resume after migrate */
@@ -117,7 +122,7 @@ public class TransactionalFileInputStream implements Serializable {
 			throws IOException {
 		/* resuming a non-migrating stream is meaningless */
 		if (_isMigrating == false) {
-			System.out.println("WARNING: try to resume a non-migrating in stream!");
+			println("WARNING: try to resume a non-migrating in stream!");
 			return;
 		}
 		
@@ -131,7 +136,11 @@ public class TransactionalFileInputStream implements Serializable {
 		_isMigrating = false;
 		notify();
 		
-		System.out.println("in stream resumed");
+		println("in stream resumed");
+	}
+	
+	private void println(String msg) {
+		System.out.println(TAG + ": " + msg);
 	}
 	
 	public void close() throws IOException {

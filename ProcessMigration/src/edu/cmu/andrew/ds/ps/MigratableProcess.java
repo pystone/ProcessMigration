@@ -29,10 +29,6 @@ public interface MigratableProcess extends Runnable, Serializable {
 	 */
 	public void resume();
 	
-	/*
-	 * 
-	 */
-	public String getTag();
 	
 	/*
 	 *  This method can, for example, print the class name of the process 

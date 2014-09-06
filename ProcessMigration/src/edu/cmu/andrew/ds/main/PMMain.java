@@ -1,13 +1,11 @@
 package edu.cmu.andrew.ds.main;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Scanner;
 
 import edu.cmu.andrew.ds.network.ClientManager;
 import edu.cmu.andrew.ds.network.ServerManager;
-import edu.cmu.andrew.ds.ps.KcProcess;
-import edu.cmu.andrew.ds.ps.MigratableProcess;
 import edu.cmu.andrew.ds.ps.ProcessManager;
 
 /**
@@ -28,33 +26,37 @@ public class PMMain {
 			throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException, 
 			IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
 		
-		System.out.println("Nothing has been done now!");
+//		if (args.length == 0) {
+//			showHelp();
+//			return;
+//		}
+//		else if (args[0].equals("server")) {
+//			_server = new ServerManager(6777);
+//			ProcessManager.getInstance().startSvr(_server);
+//		}
+//		else if (args[0].equals("client")) {
+//			_client = new ClientManager("localhost", 6777);
+//			ProcessManager.getInstance().startSvr(_client);
+//		}
+//		else {
+//			showHelp();
+//			return;
+//		}
 		
-		if (args.length == 0) {
-			showHelp();
-			return;
-		}
-		else if (args[0].equals("server")) {
+		// for test only
+		Scanner in = new Scanner(System.in);
+		String tmp = in.nextLine();
+		
+		if (tmp.contains("s")) {
 			_server = new ServerManager(6777);
-//			MigratableProcess ps = _server.readFromClient();
 			ProcessManager.getInstance().startSvr(_server);
 		}
-		else if (args[0].equals("client")) {
+		else if (tmp.contains("c")) {
 			_client = new ClientManager("localhost", 6777);
-			_client.showConnected();
 			ProcessManager.getInstance().startSvr(_client);
 		}
-		else {
-			showHelp();
-			return;
-		}
 		
-				
-		
-//		ClientManager client = new ClientManager();
-//		client.test();
-		
-		System.out.println("Finish running!");
+		in.close();
 	}
 	
 	public static void showHelp() {

@@ -6,6 +6,11 @@ import edu.cmu.andrew.ds.io.TransactionalFileInputStream;
 import edu.cmu.andrew.ds.io.TransactionalFileOutputStream;
 
 public class PyProcess implements MigratableProcess {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 2L;
+
 	private static final String TAG = PyProcess.class.getSimpleName();
 	
 	/*
@@ -155,8 +160,4 @@ public class PyProcess implements MigratableProcess {
 		return null;
 	}
 
-	@Override
-	public String getTag() {
-		return TAG;
-	}
 }
