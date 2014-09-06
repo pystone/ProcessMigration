@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import edu.cmu.andrew.ds.network.NetworkManager;
+
 
 /**
  * You should create a ProcessManager to monitor for requests to launch, remove, and migrate processes.
@@ -41,8 +43,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ProcessManager {
 	private static final String TAG = ProcessManager.class.getSimpleName();
 	
-	private static final String SERIALIZED_FILENAME = "PM.ser";
+//	private static final String SERIALIZED_FILENAME = "PM.ser";
 	private String packageName;
+	private NetworkManager _networkManager = null;
 	/*
 	 * Instantiate process class until runtime by reflection.
 	 */
@@ -71,7 +74,8 @@ public class ProcessManager {
         return pid.getAndIncrement();
     }
 	
-	public void startSvr() {
+	public void startSvr(NetworkManager nwMgr) {
+		_networkManager = nwMgr;
 		System.out.println("Type 'help' for more information");
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         System.out.print("> ");
@@ -128,49 +132,65 @@ public class ProcessManager {
 	private void migrate(String psName) {
 		MigratableProcess ps = map.get(psName);
 		ps.suspend();
-		ObjectOutputStream out = null;
 		try {
-			out = new ObjectOutputStream(new FileOutputStream(SERIALIZED_FILENAME));
-			out.writeObject(ps);
-			out.flush();
-			out.close();
+			_networkManager.send(ps);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+//		ObjectOutputStream out = null;
+//		try {
+//			out = new ObjectOutputStream(new FileOutputStream(SERIALIZED_FILENAME));
+//			out.writeObject(ps);
+//			out.flush();
+//			out.close();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 	}
 
 	/*
 	 * 
 	 */
-	private void resume(String psName) {		
-		ObjectInputStream in = null;
-		try {
-			in = new ObjectInputStream(new FileInputStream(SERIALIZED_FILENAME));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
+	private void resume(String psName) {	
 		Object obj = null;
+		
+//		ObjectInputStream in = null;
+//		try {
+//			in = new ObjectInputStream(new FileInputStream(SERIALIZED_FILENAME));
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//
+//		try {
+//			obj = in.readObject();
+//		} catch (ClassNotFoundException | IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+		
 		try {
-			obj = in.readObject();
+			obj = _networkManager.receive();
 		} catch (ClassNotFoundException | IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
 		if (obj instanceof MigratableProcess) {
 			ps = (MigratableProcess) obj;
 			
 			Thread thread = new Thread(ps);
 	        thread.start();
 	        
-	        try {
-				in.close();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+//	        try {
+//				in.close();
+//			} catch (IOException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
 		}
 	}
 	
