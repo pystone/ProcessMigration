@@ -30,6 +30,7 @@ public class KcProcess implements MigratableProcess {
 	@Override
 	public void run() {
 		System.out.println(TAG + " : run() begin, cnt = " + cnt);
+//		System.out.println(getClass().getName());
 		
 		while(!suspending) {
 			try {

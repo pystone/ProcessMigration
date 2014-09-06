@@ -8,7 +8,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,15 +44,15 @@ import edu.cmu.andrew.ds.network.NetworkManager;
 
 public class ProcessManager {
 	private static final String TAG = ProcessManager.class.getSimpleName();
+	private static int _pid = 0;
 	
-//	private static final String SERIALIZED_FILENAME = "PM.ser";
 	private String packageName;
 	private NetworkManager _networkManager = null;
 	/*
 	 * Instantiate process class until runtime by reflection.
 	 */
 	private MigratableProcess ps;
-	private Map<String, MigratableProcess> map = new ConcurrentHashMap<String, MigratableProcess>();
+	private Map<Integer, MigratableProcess> _pmap = new ConcurrentHashMap<Integer, MigratableProcess>();
 		
 	private AtomicInteger pid; 
 	
@@ -73,6 +75,19 @@ public class ProcessManager {
 	public int generateID() {
         return pid.getAndIncrement();
     }
+	
+	private void addProcess(MigratableProcess ps) {
+		_pmap.put(Integer.valueOf(_pid), ps);
+		++_pid;
+	}
+	
+	private boolean deleteProcess(int idx) {
+		if (_pmap.remove(Integer.valueOf(idx)) == null) {
+			return false;
+		}
+		return true;
+	}
+	
 	
 	public void startSvr(NetworkManager nwMgr) {
 		_networkManager = nwMgr;
@@ -99,7 +114,7 @@ public class ProcessManager {
 			migrate(arg[1]);
 			break;
 		case "rs":
-			resume(arg[1]);
+			waitForImmigration();
 			break;
 		case "ps":
 			display();
@@ -121,31 +136,39 @@ public class ProcessManager {
 			e.printStackTrace();
 		}
 		
-    	map.put(psName, ps);
+		addProcess(ps);
     	Thread thread = new Thread(ps);
         thread.start();
 	}
 	
-	/*
-	 * 
-	 */
-	private void migrate(String psName) {
-		MigratableProcess ps = map.get(psName);
+	
+	private void migrate(String strIdx) {
+		
+		int idx = Integer.parseInt(strIdx);
+		
+		MigratableProcess ps = (MigratableProcess)_pmap.get(idx);
+		
+		if (ps == null) {
+			println("ERROR: try to migrate an invalid pid(" + idx + ")!");
+			return;
+		}
+		
 		ps.suspend();
+		
 		try {
 			_networkManager.send(ps);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} finally {
-			map.remove(psName);
+			deleteProcess(idx);
+			println("Migrated to network successfully!");
+			display();
 		}
 	}
 
-	/*
-	 * 
-	 */
-	private void resume(String psName) {	
+	
+	private void waitForImmigration() {
 		Object obj = null;
 		
 		try {
@@ -158,16 +181,34 @@ public class ProcessManager {
 		if (obj instanceof MigratableProcess) {
 			ps = (MigratableProcess) obj;
 			
-			map.put(ps.getTag(), ps);
+			addProcess(ps);
+
 			Thread thread = new Thread(ps);
 	        thread.start();
+	        
+	        println("Migrated from network successfully!");
+	        display();
 		}
+	}
+	
+	private void println(String msg) {
+		System.out.println(TAG + ": " + msg);
 	}
 	
 	/*
 	 * 
 	 */
-	private void display() {}
+	private void display() {
+		if (_pmap.size() == 0) {
+			System.out.println("\tNo process is currently running.");
+			return;
+		}
+		System.out.println("\tpid\tClass Name");
+		for (Map.Entry<Integer, MigratableProcess> entry : _pmap.entrySet())
+		{
+		    System.out.println("\t" + entry.getKey() + "\t" + entry.getValue().getClass().getName());
+		}
+	}
 	
 	public void help() {}
 	

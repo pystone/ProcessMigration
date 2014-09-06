@@ -15,14 +15,23 @@ import java.io.Serializable;
 
 public interface MigratableProcess extends Runnable, Serializable {
 	
+	static long pid = 0;
+	
+	
 	/*
 	 *  This method will be called before the object is serialized. 
 	 *  It affords an opportunity for the process to enter a known safe state.
 	 */
 	public void suspend();
 	
+	/*
+	 * This method will be called after migration.
+	 */
 	public void resume();
 	
+	/*
+	 * 
+	 */
 	public String getTag();
 	
 	/*
