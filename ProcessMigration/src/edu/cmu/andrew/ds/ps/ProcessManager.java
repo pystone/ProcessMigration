@@ -78,6 +78,9 @@ public class ProcessManager implements Runnable {
 		return true;
 	}
 	
+	private int getCurrentPid() {
+		return _pid.get() - 1;
+	}
 	
 	public void startSvr(NetworkManager nwMgr) {
 		_networkManager = nwMgr;
@@ -128,7 +131,7 @@ public class ProcessManager implements Runnable {
 			exit();
 			break;
 		default:
-			help();
+//			help();
 			break;	
 		}	
 	}
@@ -149,8 +152,10 @@ public class ProcessManager implements Runnable {
 		}
 		
 		addProcess(ps);
+		System.out.println(psName + " class has been created, pid: " + getCurrentPid());
     	Thread thread = new Thread(ps);
         thread.start();
+        display();
 	}
 	
 	
@@ -178,13 +183,14 @@ public class ProcessManager implements Runnable {
 		try {
 			_networkManager.send(ps);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} finally {
-			deleteProcess(idx);
-			println("Migrated to network successfully!");
-			display();
-		}
+			System.out.println("Network problem. Cannot migrate now.");
+			ps.resume();
+			return;
+		} 
+		
+		deleteProcess(idx);
+		println("Migrated to network successfully!");
+		display();
 	}
 	
 	private void println(String msg) {
