@@ -22,8 +22,8 @@ public class ClientManager extends NetworkManager {
 			_socket = new Socket(addr, port);
 			System.out.println("Connected to server: " + _svrAddr + ":" + _svrPort);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.out.println("Cannot connect to server " + _svrAddr + ":" + _svrPort);
+			System.exit(0);
 		}
 	}
 }

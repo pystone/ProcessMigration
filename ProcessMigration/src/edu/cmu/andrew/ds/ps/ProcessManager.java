@@ -104,18 +104,26 @@ public class ProcessManager implements Runnable {
 	
 	private void execCmd(String[] arg) {
 		switch(arg[0]) {
+		case "create":
 		case "ct":
+			if (arg.length == 1) {
+				System.out.println("Invalid command.");
+				break;
+			}
 			create(arg[1]);
 			break;
+		case "migrate":
 		case "mg":
+			if (arg.length == 1) {
+				System.out.println("Invalid command.");
+				break;
+			}
 			migrate(arg[1]);
 			break;
-//		case "rs":
-//			waitForImmigration();
-//			break;
 		case "ps":
 			display();
 			break;
+		case "exit":
 		case "st":
 			exit();
 			break;
@@ -129,11 +137,15 @@ public class ProcessManager implements Runnable {
 		try {
 			ps = (MigratableProcess) Class.forName(packageName+ "." + psName).getConstructor(String[].class).newInstance((Object)null);
 		} catch (InstantiationException | IllegalAccessException
-				| IllegalArgumentException | InvocationTargetException
-				| NoSuchMethodException | SecurityException
-				| ClassNotFoundException e) {
+				| IllegalArgumentException | InvocationTargetException | SecurityException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			println("Class " + psName + " not found.");
+			return;
+		} catch (NoSuchMethodException e) {
+			println(psName + " should have a constructor with prototype " + psName + "(String[]);");
+			return;
 		}
 		
 		addProcess(ps);
@@ -174,30 +186,6 @@ public class ProcessManager implements Runnable {
 			display();
 		}
 	}
-
-	
-//	private void waitForImmigration() {
-//		Object obj = null;
-//		
-//		try {
-//			obj = _networkManager.receive();
-//		} catch (ClassNotFoundException | IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		
-//		if (obj instanceof MigratableProcess) {
-//			ps = (MigratableProcess) obj;
-//			
-//			addProcess(ps);
-//
-//			Thread thread = new Thread(ps);
-//	        thread.start();
-//	        
-//	        println("Migrated from network successfully!");
-//	        display();
-//		}
-//	}
 	
 	private void println(String msg) {
 		System.out.println(TAG + ": " + msg);
@@ -219,7 +207,12 @@ public class ProcessManager implements Runnable {
 	}
 	
 	public void help() {
-		
+		System.out.println("Here are the commands:");
+		System.out.println("\tcommand\t\t\tdescription");
+		System.out.println("\tcreate CLASSNAME\tcreate a new instance of CLASSNAME");
+		System.out.println("\tmigrate PID\t\tmigrate a process with PID to another computer");
+		System.out.println("\tps\t\t\tdisplay all the running processes");
+		System.out.println("\texit\t\t\texit the program");
 	}
 	
 	private void exit() {
