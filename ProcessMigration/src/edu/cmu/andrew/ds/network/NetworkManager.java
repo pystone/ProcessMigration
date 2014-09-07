@@ -17,16 +17,33 @@ import edu.cmu.andrew.ds.ps.MigratableProcess;
 public abstract class NetworkManager {
 	
 	Socket _socket = null;
+	boolean _terminated = false;
 	
-	public MigratableProcess receive() throws ClassNotFoundException, IOException {
-		ObjectInputStream in = new ObjectInputStream(_socket.getInputStream());
-		MigratableProcess inprocess = (MigratableProcess)in.readObject();
+	public Object receive() throws ClassNotFoundException {
+		ObjectInputStream in = null;
+		Object inprocess = null;
+		try {
+			in = new ObjectInputStream(_socket.getInputStream());
+			inprocess = in.readObject();
+		} catch (IOException e) {
+			return null;
+		}
+		
 		return inprocess;
 	}
 	
 	public void send(MigratableProcess mp) throws IOException {
 		ObjectOutputStream out = new ObjectOutputStream(_socket.getOutputStream());
 		out.writeObject(mp);
+	}
+	
+	public void close() {
+		try {
+			_socket.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 }

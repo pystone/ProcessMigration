@@ -49,7 +49,6 @@ public class ProcessManager implements Runnable {
 		
 	private volatile AtomicInteger _pid; 
 	
-	private volatile boolean _terminate = false;
 	
 	/*
 	 * Singleton
@@ -90,7 +89,7 @@ public class ProcessManager implements Runnable {
 		
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         System.out.print("> ");
-        while (_terminate == false) {
+        while (true) {
             String line = null;
             try {
                 line = br.readLine();
@@ -118,9 +117,7 @@ public class ProcessManager implements Runnable {
 			display();
 			break;
 		case "st":
-			/* still cannot work appropriately */
-			_receiver.stop();
-			_terminate = true;
+			exit();
 			break;
 		default:
 			help();
@@ -224,6 +221,11 @@ public class ProcessManager implements Runnable {
 	public void help() {
 		
 	}
+	
+	private void exit() {
+		_networkManager.close();
+		System.exit(0);
+	}
 
 	@Override
 	public void run() {
@@ -233,7 +235,7 @@ public class ProcessManager implements Runnable {
 			
 			try {
 				obj = _networkManager.receive();
-			} catch (ClassNotFoundException | IOException e) {
+			} catch (ClassNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
