@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,7 +52,6 @@ public class ProcessManager implements Runnable {
 		
 	private volatile AtomicInteger _pid; 
 	
-	private volatile boolean _terminate = false;
 	
 	/*
 	 * Singleton
@@ -81,6 +81,13 @@ public class ProcessManager implements Runnable {
 		return true;
 	}
 	
+	private int getCurrentPid() {
+		return _pid.get() - 1;
+	}
+	
+	private MigratableProcess getProcess(int pid) {
+		return (MigratableProcess)_pmap.get(Integer.valueOf(pid));
+	}
 	
 	public void startSvr(NetworkManager nwMgr) {
 		_networkManager = nwMgr;
@@ -92,7 +99,7 @@ public class ProcessManager implements Runnable {
 		
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         System.out.print("> ");
-        while (_terminate == false) {
+        while (true) {
             String line = null;
             try {
                 line = br.readLine();
@@ -107,30 +114,43 @@ public class ProcessManager implements Runnable {
 	
 	private void execCmd(String[] arg) {
 		switch(arg[0]) {
+		case "create":
 		case "ct":
+			if (arg.length == 1) {
+				System.out.println("Invalid command.");
+				break;
+			}
 			create(Arrays.copyOfRange(arg, 1, arg.length));
 			break;
+		case "migrate":
 		case "mg":
+			if (arg.length == 1) {
+				System.out.println("Invalid command.");
+				break;
+			}
 			migrate(arg[1]);
 			break;
-//		case "rs":
-//			waitForImmigration();
-//			break;
+		case "call":
+			if (arg.length < 3) {
+				System.out.println("Invalid command.");
+				break;
+			}
+			callMethod(arg);
 		case "ps":
 			display();
 			break;
+		case "exit":
 		case "st":
-			/* still cannot work appropriately */
-			_receiver.stop();
-			_terminate = true;
+			exit();
 			break;
 		default:
-			help();
+//			help();
 			break;	
 		}	
 	}
 	
     private void create(String[] str) {
+    	String psName = str[0];
 		try {
 			String[] s = Arrays.copyOfRange(str, 1, str.length);
 			Class<?> cls = Class.forName(packageName+ "." + str[0]);
@@ -139,15 +159,21 @@ public class ProcessManager implements Runnable {
 			ps = (MigratableProcess)ctor.newInstance((Object)s);
 			
 		} catch (InstantiationException | IllegalAccessException
-				| IllegalArgumentException | InvocationTargetException
-				| NoSuchMethodException | SecurityException
-				| ClassNotFoundException e) {
+				| IllegalArgumentException | InvocationTargetException | SecurityException e) {
 			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			println("Class " + psName + " not found.");
+			return;
+		} catch (NoSuchMethodException e) {
+			println(psName + " should have a constructor with prototype " + psName + "(String[]);");
+			return;
 		}
 		
 		addProcess(ps);
+		System.out.println(psName + " class has been created, pid: " + getCurrentPid());
     	Thread thread = new Thread(ps);
         thread.start();
+        display();
 	}
 	
 	
@@ -173,38 +199,47 @@ public class ProcessManager implements Runnable {
 		try {
 			_networkManager.send(ps);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			System.out.println("Network problem. Cannot migrate now.");
+			ps.resume();
+			return;
+		} 
+		
+		deleteProcess(idx);
+		println("Migrated to network successfully!");
+		display();
+	}
+	
+	private void callMethod(String[] argv) {
+		int pid = 0;
+		try {
+			pid = Integer.parseInt(argv[1]);
+		} catch (NumberFormatException e) {
+			println("Pid is not a number!");
+			return;
+		}
+		MigratableProcess ps = getProcess(pid);
+		if (ps == null) {
+			println("Invalid pid!");
+			return;
+		}
+		
+		Method method = null;
+		try {
+			method = ps.getClass().getMethod(argv[2], new Class[]{String[].class});
+		} catch (NoSuchMethodException e) {
+			println("No such method named " + argv[2] + " found");
+			return;
+		}catch (SecurityException e) {
 			e.printStackTrace();
-		} finally {
-			deleteProcess(idx);
-			println("Migrated to network successfully!");
-			display();
+		}
+		try {
+			method.invoke(ps, (Object)Arrays.copyOfRange(argv, 3, argv.length));
+		} catch (IllegalAccessException | IllegalArgumentException
+				| InvocationTargetException e) {
+			println("Illegal argument!");
+			return;
 		}
 	}
-
-	
-//	private void waitForImmigration() {
-//		Object obj = null;
-//		
-//		try {
-//			obj = _networkManager.receive();
-//		} catch (ClassNotFoundException | IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		
-//		if (obj instanceof MigratableProcess) {
-//			ps = (MigratableProcess) obj;
-//			
-//			addProcess(ps);
-//
-//			Thread thread = new Thread(ps);
-//	        thread.start();
-//	        
-//	        println("Migrated from network successfully!");
-//	        display();
-//		}
-//	}
 	
 	private void println(String msg) {
 		System.out.println(TAG + ": " + msg);
@@ -226,7 +261,17 @@ public class ProcessManager implements Runnable {
 	}
 	
 	public void help() {
-		
+		System.out.println("Here are the commands:");
+		System.out.println("\tcommand\t\t\tdescription");
+		System.out.println("\tcreate CLASSNAME\tcreate a new instance of CLASSNAME");
+		System.out.println("\tmigrate PID\t\tmigrate a process with PID to another computer");
+		System.out.println("\tps\t\t\tdisplay all the running processes");
+		System.out.println("\texit\t\t\texit the program");
+	}
+	
+	private void exit() {
+		_networkManager.close();
+		System.exit(0);
 	}
 
 	@Override
@@ -237,7 +282,7 @@ public class ProcessManager implements Runnable {
 			
 			try {
 				obj = _networkManager.receive();
-			} catch (ClassNotFoundException | IOException e) {
+			} catch (ClassNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
