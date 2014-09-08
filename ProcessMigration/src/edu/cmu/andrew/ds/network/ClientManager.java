@@ -4,8 +4,14 @@ import java.io.IOException;
 import java.net.Socket;
 
 /**
- * @author PY
- *
+ * ClientManager
+ * 
+ * Client side class to create and connect to server functions.
+ * 
+ * @author KAIILANG CHEN(kailianc)
+ * @author YANG PAN(yangpan)
+ * @version 1.0
+ * 
  */
 public class ClientManager extends NetworkManager {
 	

@@ -7,9 +7,20 @@ import java.io.RandomAccessFile;
 import java.io.Serializable;
 
 /**
+ * TransactionalFileOutputStream 
  * 
- * @author KAIILANG CHEN
- * @author YANG PAN
+ * A transactional output file class to facilitate migrating processes with open files.
+ * 
+ * When a write is requested, the class opens a file, seeks to the requisite location, performs the operation,
+ * and closes the file again. In this way, it will maintain all the information required in order to continue
+ * performing operations on the file, even if the process is transferred to another node.
+ * 
+ * It is assumed that all of the nodes share a common distributed file system, such as AFS, where all 
+ * of the files to be accessed will be located. And mutexes are used to avoid interrupting these methods with migration.
+ * 
+ * @author KAIILANG CHEN(kailianc)
+ * @author YANG PAN(yangpan)
+ * @version 1.0
  *
  */
 

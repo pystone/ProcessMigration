@@ -1,6 +1,16 @@
 package edu.cmu.andrew.ds.ps;
 
-
+/**
+ * NonIOProcess
+ * 
+ * A simple process to simulate a counter, in order to test the kind of process without 
+ * using the TransactionIO library.
+ *
+ * @author KAIILANG CHEN(kailianc)
+ * @author YANG PAN(yangpan)
+ * @version 1.0
+ * 
+ */
 public class NonIOProcess implements MigratableProcess {
 	private static final String TAG = NonIOProcess.class.getSimpleName();
 	

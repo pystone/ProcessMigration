@@ -8,8 +8,14 @@ import java.net.Socket;
 import edu.cmu.andrew.ds.ps.MigratableProcess;
 
 /**
- * @author PY
+ * NetworkManager
+ * 
+ * Base class of Server and Client to provide Serializtion/Deserialization functions in bi-directional migration.
  *
+ * @author KAIILANG CHEN(kailianc)
+ * @author YANG PAN(yangpan)
+ * @version 1.0
+ * 
  */
 public abstract class NetworkManager {
 	
@@ -38,9 +44,7 @@ public abstract class NetworkManager {
 		try {
 			_socket.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
-
 }

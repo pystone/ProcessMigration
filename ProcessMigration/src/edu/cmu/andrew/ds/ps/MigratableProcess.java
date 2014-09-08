@@ -3,14 +3,18 @@ package edu.cmu.andrew.ds.ps;
 import java.io.Serializable;
 
 /**
- * For this lab we will focus our attention on processes that are specially built to be migratable, 
- * which we’ll refer to thread as migratable processes. In order to simply the discussion, 
- * we are going to assume that the work is represented by object specially designed to be migratable,
- * where the constraints are captured by an interface or abstract base class
+ * MigratableProcess
  * 
+ * An interface for all the migratable processes, in which suspend and resume functions before/after
+ * migration are provided.
+ * 
+ * In order to focus our attention on processes that are specially built to be migratable, 
+ * threads here is used as migratable processes. 
  *
- * @author KAIILANG CHEN
- * @author YANG PAN
+ * @author KAIILANG CHEN(kailianc)
+ * @author YANG PAN(yangpan)
+ * @version 1.0
+ * 
  */
 
 public interface MigratableProcess extends Runnable, Serializable {

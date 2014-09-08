@@ -15,26 +15,21 @@ import edu.cmu.andrew.ds.network.NetworkManager;
 
 
 /**
- * You should create a ProcessManager to monitor for requests to launch, remove, and migrate processes.
- * You can have it poll to determine when processes die, receive periodic updates from them, and/or rely
+ * ProcessManager
+ * 
+ * A comprehensive class to monitor for requests to launch, remove, and migrate processes.
+ * It can be polled to determine when processes die, receive periodic updates from them, and/or rely
  * upon them to tell you as part of their depth. 
  * 
- * Think about the trade-offs of each method. Can a process always tell you before it does? 
- * What is the cost of polling or heart-beating?
+ * When being asked to create new processes, it is accepted by a name for the instance.  
+ * Several instances of the same type at the same time are supported
  * 
- * When asking the ProcessManager to create new processes, you probably want it to accept (or return) 
- * a name for the instance. This way, you have a way to identify it later. Remember, it might be banging
- * several instances of the same type at the same time.
+ * Instantiating until runtime is supported by use of Java’s java.lang.Class<T> class and 
+ * java.lang.reflect.Constructor<T> class to handle this at runtime.
  * 
- * Your ProcessManager should be able to handle any MigratableProcess that conforms to your interface, 
- * abstract base class, and/or other requirements -- not just the examples you provided.
- *
- * This means that you will not know what class you are instantiating until runtime. Thus, you will likely 
- * need to use something like Java’s java.lang.Class<T> class and java.lang.reflect.Constructor<T> class 
- * to handle this at runtime. ★	use reflection
- * 
- * @author KAIILANG CHEN
- * @author YANG PAN
+ * @author KAIILANG CHEN(kailianc)
+ * @author YANG PAN(yangpan)
+ * @version 1.0
  *
  */
 
@@ -48,8 +43,7 @@ public class ProcessManager implements Runnable {
 	private MigratableProcess ps;
 	private volatile Map<Integer, MigratableProcess> _pmap = new ConcurrentSkipListMap<Integer, MigratableProcess>();
 		
-	private volatile AtomicInteger _pid; 
-	
+	private volatile AtomicInteger _pid; 	
 	
 	/*
 	 * Singleton
@@ -298,7 +292,5 @@ public class ProcessManager implements Runnable {
 		        display();
 			}
 		}
-	}
-	
-	
+	}	
 }

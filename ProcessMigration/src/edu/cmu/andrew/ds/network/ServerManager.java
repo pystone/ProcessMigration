@@ -5,8 +5,14 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 
 /**
- * @author PY
- *
+ * ServerManager
+ * 
+ * Server side class to prepare and wait for client connection functions.
+ * 
+ * @author KAIILANG CHEN(kailianc)
+ * @author YANG PAN(yangpan)
+ * @version 1.0
+ * 
  */
 public class ServerManager extends NetworkManager {
 	int _svrPort = 6400;

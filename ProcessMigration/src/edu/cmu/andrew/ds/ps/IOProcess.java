@@ -1,14 +1,23 @@
 package edu.cmu.andrew.ds.ps;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 
 import edu.cmu.andrew.ds.io.TransactionalFileInputStream;
 import edu.cmu.andrew.ds.io.TransactionalFileOutputStream;
 
-
+/**
+ * IOProcess
+ * 
+ * Read input file(shuffled alphabet) by one byte a time, put the character into an array and sort,
+ * and then output to a file, in order to test the kind of process using the TransactionIO library.
+ *
+ * @author KAIILANG CHEN(kailianc)
+ * @author YANG PAN(yangpan)
+ * @version 1.0
+ * 
+ */
 public class IOProcess implements MigratableProcess {	
 	private static final String TAG = IOProcess.class.getSimpleName();
 	
