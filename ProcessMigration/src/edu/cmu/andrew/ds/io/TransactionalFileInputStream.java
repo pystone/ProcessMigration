@@ -41,51 +41,39 @@ public class TransactionalFileInputStream implements Serializable {
 	 * it any time a file handle is created or renewed.
 	 */
 	
+	private File sourceFile;
+	private long offset;
+	private transient RandomAccessFile handler;
+	
 	// TODO: 1. more read interfaces
 	//		 2. what about the read requests emerging within the period that the isMigrating flag is set?
-	private FileChannel _in = null;
-	private long _pos = 0;
-	private Path _path = null;
 	private boolean _isReading = false;
 	private boolean _isMigrating = false;
 	
 	public TransactionalFileInputStream(String path) 
 			throws IOException {
-		_path = Paths.get(path);
-		_in = FileChannel.open(_path, READ);
+		this.sourceFile = new File(path);
+        this.offset = 0;
 	}
 	
 	/* read in one byte */
 	public synchronized int read() throws IOException {
-		/* if is migrating, wait */
-		while (_isMigrating == true) {
-			println("waiting for completion of migration");
-			try {
-				wait();
-			} catch(InterruptedException e) { } 
-			finally { }
-		}
+		if (!_isMigrating || handler == null) {
+            handler = new RandomAccessFile(sourceFile, "r");
+            handler.seek(offset);
+        }
+        int result = handler.read();
+        offset++;
 		
 		/* set the reading lock to make sure it won't enter migrating mode */
 		setReading();
-		
-		ByteBuffer buf = ByteBuffer.allocate(4);
-		
-		if (_in.read(buf) == -1) {
-			notify();
-			return -1;
-		}
-		
-		/* after reading in, should use this method to get buffer ready to write */
-		buf.flip();
-	
+
 		/* notify other waiting threads before migrating */
 		notify();
 		
 		/* reset the reading lock to make it ready to enter migrating mode */
 		resetReading();
-		
-		return (((ByteBuffer)buf.rewind()).asIntBuffer()).get();
+		return result;
 	}
 	
 	/* suspend before migrate */
@@ -107,11 +95,6 @@ public class TransactionalFileInputStream implements Serializable {
 		}
 		_isMigrating = true;
 		
-		/* save and close current file description */
-		_pos = _in.position();
-		_in.close();
-		_in = null;
-		
 		// TODO: serialize other stuffs here
 		
 		println("in stream suspended");
@@ -125,10 +108,6 @@ public class TransactionalFileInputStream implements Serializable {
 			println("WARNING: try to resume a non-migrating in stream!");
 			return;
 		}
-		
-		/* reopen the file descriptor and set the position */
-		_in = FileChannel.open(_path);
-		_in = _in.position(_pos);
 		
 		// TODO: deserialize other stuffs here
 		
@@ -144,12 +123,13 @@ public class TransactionalFileInputStream implements Serializable {
 	}
 	
 	public void close() throws IOException {
-		_in.close();
+		handler.close();
 	}
 	
 	private void setReading() {
 		_isReading = true;
 	}
+
 	private synchronized void resetReading() {
 		_isReading = false;
 		notify();

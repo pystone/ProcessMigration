@@ -3,7 +3,9 @@ package edu.cmu.andrew.ds.ps;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -106,7 +108,7 @@ public class ProcessManager implements Runnable {
 	private void execCmd(String[] arg) {
 		switch(arg[0]) {
 		case "ct":
-			create(arg[1]);
+			create(Arrays.copyOfRange(arg, 1, arg.length));
 			break;
 		case "mg":
 			migrate(arg[1]);
@@ -128,14 +130,18 @@ public class ProcessManager implements Runnable {
 		}	
 	}
 	
-    private void create(String psName) {
+    private void create(String[] str) {
 		try {
-			ps = (MigratableProcess) Class.forName(packageName+ "." + psName).getConstructor(String[].class).newInstance((Object)null);
+			String[] s = Arrays.copyOfRange(str, 1, str.length);
+			Class<?> cls = Class.forName(packageName+ "." + str[0]);
+			Constructor<?> ctor = cls.getConstructor(String[].class);
+			
+			ps = (MigratableProcess)ctor.newInstance((Object)s);
+			
 		} catch (InstantiationException | IllegalAccessException
 				| IllegalArgumentException | InvocationTargetException
 				| NoSuchMethodException | SecurityException
 				| ClassNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -146,8 +152,7 @@ public class ProcessManager implements Runnable {
 	
 	
 	private void migrate(String strIdx) {
-		
-		int idx = 0;
+		int idx = 0;		
 		
 		try {
 			idx = Integer.parseInt(strIdx);
@@ -155,7 +160,6 @@ public class ProcessManager implements Runnable {
 			println("ERROR: invalid pid(" + strIdx + "), not a number!");
 			return;
 		}
-		
 		
 		MigratableProcess ps = (MigratableProcess)_pmap.get(idx);
 		

@@ -1,16 +1,10 @@
 package edu.cmu.andrew.ds.io;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.io.Serializable;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import static java.nio.file.StandardOpenOption.WRITE;
-import static java.nio.file.StandardOpenOption.SYNC;
-import static java.nio.file.StandardOpenOption.CREATE;
 
 /**
  * 
@@ -32,35 +26,31 @@ public class TransactionalFileOutputStream  extends OutputStream implements Seri
 	 * unless a “migrated” flag is set, etc, in which case you would set the flag upon migration and reset
 	 * it any time a file handle is created or renewed.
 	 */
-	private FileChannel _out = null;
-	private long _pos = 0;
-	private Path _path = null;
+	
+	private File targetFile;
+	private long offset;
+	private transient RandomAccessFile handler;
+	
 	private boolean _isWriting = false;
 	private boolean _isMigrating = false;
 	
 	public TransactionalFileOutputStream(String path) throws IOException {
-		_path = Paths.get(path);
-		_out = FileChannel.open(_path, WRITE, CREATE, SYNC);
+		this.targetFile = new File(path);
+        this.offset = 0;
 	}
 	
 	@Override
 	public synchronized void write(int b) throws IOException {
-		/* if is migrating, wait */
-		while (_isMigrating == true) {
-			println("waiting for completion of migration");
-			try {
-				wait();
-			} catch(InterruptedException e) { } 
-			finally { }
-		}
 		
 		/* set the reading lock to make sure it won't enter migrating mode */
 		setWriting();
 		
-		ByteBuffer buf = ByteBuffer.allocate(4);
-		buf.asIntBuffer().put(b);
-		
-		_out.write(buf);
+		if (!_isMigrating || handler == null) {
+            handler = new RandomAccessFile(targetFile, "rw");
+            handler.seek(offset);
+        }
+        handler.write(b);
+        offset++;
 	
 		/* notify other waiting threads before migrating */
 		notify();
@@ -88,11 +78,6 @@ public class TransactionalFileOutputStream  extends OutputStream implements Seri
 		}
 		_isMigrating = true;
 		
-		/* save and close current file description */
-		_pos = _out.position();
-		_out.close();
-		_out = null;
-		
 		// TODO: serialize other stuffs here
 		
 		println("out stream suspended");
@@ -107,10 +92,6 @@ public class TransactionalFileOutputStream  extends OutputStream implements Seri
 			return;
 		}
 		
-		/* reopen the file descriptor and set the position */
-		_out = FileChannel.open(_path);
-		_out = _out.position(_pos);
-		
 		// TODO: deserialize other stuffs here
 		
 		/* mark the end of the migration and notify other waiting threads */
@@ -121,7 +102,7 @@ public class TransactionalFileOutputStream  extends OutputStream implements Seri
 	}
 	
 	public void close() throws IOException {
-		_out.close();
+		handler.close();
 	}
 	
 	public void setWriting() {
