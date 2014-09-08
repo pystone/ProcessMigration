@@ -1,6 +1,3 @@
-/**
- * 
- */
 package edu.cmu.andrew.ds.network;
 
 import java.io.IOException;

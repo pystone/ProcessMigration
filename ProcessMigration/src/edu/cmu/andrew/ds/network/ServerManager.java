@@ -1,6 +1,3 @@
-/**
- * 
- */
 package edu.cmu.andrew.ds.network;
 
 import java.io.IOException;
@@ -28,7 +25,6 @@ public class ServerManager extends NetworkManager {
 			
 			System.out.println("Client connected! " + _socket.getInetAddress());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

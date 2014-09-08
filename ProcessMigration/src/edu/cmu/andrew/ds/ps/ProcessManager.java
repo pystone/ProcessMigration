@@ -41,7 +41,7 @@ import edu.cmu.andrew.ds.network.NetworkManager;
 public class ProcessManager implements Runnable {
 	private static final String TAG = ProcessManager.class.getSimpleName();
 	
-	private String packageName;
+	private String _packageName;
 	private NetworkManager _networkManager = null;
 	private Thread _receiver = null;
 
@@ -64,7 +64,7 @@ public class ProcessManager implements Runnable {
 	
 	public ProcessManager() {
 		_pid = new AtomicInteger(0);
-		packageName = this.getClass().getPackage().getName();
+		_packageName = this.getClass().getPackage().getName();
 	}
 	
 	private void addProcess(MigratableProcess ps) {
@@ -141,8 +141,11 @@ public class ProcessManager implements Runnable {
 		case "st":
 			exit();
 			break;
+		case "help":
+		case "hp":
+			help();
+			break;
 		default:
-//			help();
 			break;	
 		}	
 	}
@@ -151,7 +154,7 @@ public class ProcessManager implements Runnable {
     	String psName = str[0];
 		try {
 			String[] s = Arrays.copyOfRange(str, 1, str.length);
-			Class<?> cls = Class.forName(packageName+ "." + str[0]);
+			Class<?> cls = Class.forName(_packageName+ "." + str[0]);
 			Constructor<?> ctor = cls.getConstructor(String[].class);
 			
 			ps = (MigratableProcess)ctor.newInstance((Object)s);
@@ -281,7 +284,6 @@ public class ProcessManager implements Runnable {
 			try {
 				obj = _networkManager.receive();
 			} catch (ClassNotFoundException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			
