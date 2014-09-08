@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -82,6 +84,10 @@ public class ProcessManager implements Runnable {
 		return _pid.get() - 1;
 	}
 	
+	private MigratableProcess getProcess(int pid) {
+		return (MigratableProcess)_pmap.get(Integer.valueOf(pid));
+	}
+	
 	public void startSvr(NetworkManager nwMgr) {
 		_networkManager = nwMgr;
 		System.out.println("Type 'help' for more information");
@@ -123,6 +129,12 @@ public class ProcessManager implements Runnable {
 			}
 			migrate(arg[1]);
 			break;
+		case "call":
+			if (arg.length < 3) {
+				System.out.println("Invalid command.");
+				break;
+			}
+			callMethod(arg);
 		case "ps":
 			display();
 			break;
@@ -191,6 +203,38 @@ public class ProcessManager implements Runnable {
 		deleteProcess(idx);
 		println("Migrated to network successfully!");
 		display();
+	}
+	
+	private void callMethod(String[] argv) {
+		int pid = 0;
+		try {
+			pid = Integer.parseInt(argv[1]);
+		} catch (NumberFormatException e) {
+			println("Pid is not a number!");
+			return;
+		}
+		MigratableProcess ps = getProcess(pid);
+		if (ps == null) {
+			println("Invalid pid!");
+			return;
+		}
+		
+		Method method = null;
+		try {
+			method = ps.getClass().getMethod(argv[2], new Class[]{String[].class});
+		} catch (NoSuchMethodException e) {
+			println("No such method named " + argv[2] + " found");
+			return;
+		}catch (SecurityException e) {
+			e.printStackTrace();
+		}
+		try {
+			method.invoke(ps, (Object)Arrays.copyOfRange(argv, 3, argv.length));
+		} catch (IllegalAccessException | IllegalArgumentException
+				| InvocationTargetException e) {
+			println("Illegal argument!");
+			return;
+		}
 	}
 	
 	private void println(String msg) {

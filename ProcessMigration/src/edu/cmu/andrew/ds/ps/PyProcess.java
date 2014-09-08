@@ -36,18 +36,6 @@ public class PyProcess implements MigratableProcess {
 		_id = 0;
 	}
 	
-	public PyProcess(int id) throws IOException {
-		_inputStream = new TransactionalFileInputStream("./input.txt");
-		_outputStream = new TransactionalFileOutputStream("./output.txt");
-		_id = id;
-	}
-	
-	public PyProcess() throws IOException {
-		_inputStream = new TransactionalFileInputStream("./input.txt");
-		_outputStream = new TransactionalFileOutputStream("./output.txt");
-		_id = 0;
-	}
-	
 	public void readAndPrintOneInt() throws IOException {
 		System.out.println(_id + ": " + Integer.toHexString(_inputStream.read()));
 	}
@@ -63,6 +51,11 @@ public class PyProcess implements MigratableProcess {
 			t = new Thread (this, String.valueOf(_id));
 			t.start ();
 		}
+	}
+	
+	public void test(String[] str) {
+		System.out.println("haha");
+		System.out.println(str[0]);
 	}
 
 	@Override
