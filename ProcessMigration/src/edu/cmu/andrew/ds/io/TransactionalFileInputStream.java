@@ -27,7 +27,7 @@ import static java.nio.file.StandardOpenOption.READ;
  *
  */
 
-public class TransactionalFileInputStream implements Serializable {
+public class TransactionalFileInputStream extends InputStream implements Serializable {
 	/**
 	 * 
 	 */
@@ -44,28 +44,31 @@ public class TransactionalFileInputStream implements Serializable {
 	private File sourceFile;
 	private long offset;
 	private transient RandomAccessFile handler;
+	private boolean migrated;
 	
 	// TODO: 1. more read interfaces
-	//		 2. what about the read requests emerging within the period that the isMigrating flag is set?
+	//		 2. what about the read requests emerging within the period that the isMigrating flag is set?e;
 	private boolean _isReading = false;
-	private boolean _isMigrating = false;
 	
 	public TransactionalFileInputStream(String path) 
 			throws IOException {
 		this.sourceFile = new File(path);
         this.offset = 0;
+        this.migrated = false;
 	}
 	
 	/* read in one byte */
-	public synchronized int read() throws IOException {
-		if (!_isMigrating || handler == null) {
+	@Override
+    public synchronized int read() throws IOException {
+        if (migrated || handler == null) {
             handler = new RandomAccessFile(sourceFile, "r");
+            migrated = false;
             handler.seek(offset);
         }
         int result = handler.read();
         offset++;
-		
-		/* set the reading lock to make sure it won't enter migrating mode */
+        
+        /* set the reading lock to make sure it won't enter migrating mode */
 		setReading();
 
 		/* notify other waiting threads before migrating */
@@ -73,14 +76,15 @@ public class TransactionalFileInputStream implements Serializable {
 		
 		/* reset the reading lock to make it ready to enter migrating mode */
 		resetReading();
-		return result;
-	}
+        
+        return result;
+    }
 	
 	/* suspend before migrate */
 	public synchronized void suspend() 
 			throws IOException {
 		/* ensure one instance is suspended only once */
-		if (_isMigrating == true) {
+		if (!migrated) {
 			println("WARNING: try to suspend a suspended in stream!");
 			return;
 		}
@@ -93,7 +97,7 @@ public class TransactionalFileInputStream implements Serializable {
 			} catch(InterruptedException e) { } 
 			finally { }
 		}
-		_isMigrating = true;
+		migrated = false;
 		
 		// TODO: serialize other stuffs here
 		
@@ -104,7 +108,7 @@ public class TransactionalFileInputStream implements Serializable {
 	public synchronized void resume() 
 			throws IOException {
 		/* resuming a non-migrating stream is meaningless */
-		if (_isMigrating == false) {
+		if (!migrated) {
 			println("WARNING: try to resume a non-migrating in stream!");
 			return;
 		}
@@ -112,7 +116,7 @@ public class TransactionalFileInputStream implements Serializable {
 		// TODO: deserialize other stuffs here
 		
 		/* mark the end of the migration and notify other waiting threads */
-		_isMigrating = false;
+		migrated = true;
 		notify();
 		
 		println("in stream resumed");
@@ -122,9 +126,12 @@ public class TransactionalFileInputStream implements Serializable {
 		System.out.println(TAG + ": " + msg);
 	}
 	
-	public void close() throws IOException {
-		handler.close();
-	}
+	@Override
+    public void close() throws IOException {
+		if(handler != null) {
+    	    handler.close();
+		}
+    }
 	
 	private void setReading() {
 		_isReading = true;
@@ -135,4 +142,7 @@ public class TransactionalFileInputStream implements Serializable {
 		notify();
 	}
 	
+	public void setMigrated(boolean migrated) {
+        this.migrated = migrated;
+    }
 }

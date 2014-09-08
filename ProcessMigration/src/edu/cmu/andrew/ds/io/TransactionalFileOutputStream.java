@@ -14,11 +14,6 @@ import java.io.Serializable;
  */
 
 public class TransactionalFileOutputStream  extends OutputStream implements Serializable {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 4L;
-
 	private static final String TAG = TransactionalFileOutputStream.class.getSimpleName();
 	
 	/*
@@ -30,40 +25,41 @@ public class TransactionalFileOutputStream  extends OutputStream implements Seri
 	private File targetFile;
 	private long offset;
 	private transient RandomAccessFile handler;
+	private boolean migrated;
 	
 	private boolean _isWriting = false;
-	private boolean _isMigrating = false;
 	
 	public TransactionalFileOutputStream(String path) throws IOException {
 		this.targetFile = new File(path);
         this.offset = 0;
+        this.migrated = false;
 	}
 	
 	@Override
-	public synchronized void write(int b) throws IOException {
-		
+    public synchronized void write(int b) throws IOException {
 		/* set the reading lock to make sure it won't enter migrating mode */
 		setWriting();
 		
-		if (!_isMigrating || handler == null) {
+        if (migrated || handler == null) {
             handler = new RandomAccessFile(targetFile, "rw");
             handler.seek(offset);
+            migrated = false;
         }
         handler.write(b);
         offset++;
-	
-		/* notify other waiting threads before migrating */
+        
+        /* notify other waiting threads before migrating */
 		notify();
 		
 		/* reset the reading lock to make it ready to enter migrating mode */
 		resetWriting();
-	}
+    }
 	
 	/* suspend before migrate */
 	public synchronized void suspend() 
 			throws IOException {
 		/* ensure one instance is suspended only once */
-		if (_isMigrating == true) {
+		if (!migrated) {
 			println("WARNING: try to suspend a suspended out stream!");
 			return;
 		}
@@ -76,7 +72,7 @@ public class TransactionalFileOutputStream  extends OutputStream implements Seri
 			} catch(InterruptedException e) { } 
 			finally { }
 		}
-		_isMigrating = true;
+		migrated = false;
 		
 		// TODO: serialize other stuffs here
 		
@@ -87,7 +83,7 @@ public class TransactionalFileOutputStream  extends OutputStream implements Seri
 	public synchronized void resume() 
 			throws IOException {
 		/* resuming a non-migrating stream is meaningless */
-		if (_isMigrating == false) {
+		if (!migrated) {
 			println("WARNING: try to resume a non-migrating out stream!");
 			return;
 		}
@@ -95,17 +91,23 @@ public class TransactionalFileOutputStream  extends OutputStream implements Seri
 		// TODO: deserialize other stuffs here
 		
 		/* mark the end of the migration and notify other waiting threads */
-		_isMigrating = false;
+		migrated = true;
 		notify();
 		
 		println("out stream resumed");
 	}
 	
-	public void close() throws IOException {
-		handler.close();
-	}
-	
-	public void setWriting() {
+	/**
+     * close the handle
+     */
+    @Override
+    public void close() throws IOException {
+    	if(handler != null) {
+    		handler.close();
+    	}
+    }
+    
+    public void setWriting() {
 		_isWriting = true;
 	}
 	public synchronized void resetWriting() {
@@ -116,4 +118,13 @@ public class TransactionalFileOutputStream  extends OutputStream implements Seri
 	private void println(String msg) {
 		System.out.println(TAG + ": " + msg);
 	}
+
+    /**
+     * Set the migrated flag
+     *
+     * @param migrated the migrated value
+     */
+    public void setMigrated(boolean migrated) {
+        this.migrated = migrated;
+    }
 }

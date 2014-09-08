@@ -8,7 +8,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import edu.cmu.andrew.ds.network.NetworkManager;
@@ -44,11 +44,9 @@ public class ProcessManager implements Runnable {
 	private String packageName;
 	private NetworkManager _networkManager = null;
 	private Thread _receiver = null;
-	/*
-	 * Instantiate process class until runtime by reflection.
-	 */
+
 	private MigratableProcess ps;
-	private volatile Map<Integer, MigratableProcess> _pmap = new ConcurrentHashMap<Integer, MigratableProcess>();
+	private volatile Map<Integer, MigratableProcess> _pmap = new ConcurrentSkipListMap<Integer, MigratableProcess>();
 		
 	private volatile AtomicInteger _pid; 
 	
@@ -290,8 +288,7 @@ public class ProcessManager implements Runnable {
 			if (obj instanceof MigratableProcess) {
 				ps = (MigratableProcess) obj;
 				
-				addProcess(ps);
-
+				addProcess(ps);				
 				Thread thread = new Thread(ps);
 		        thread.start();
 		        
