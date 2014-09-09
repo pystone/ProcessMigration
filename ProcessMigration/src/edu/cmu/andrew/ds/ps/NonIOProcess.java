@@ -22,6 +22,7 @@ public class NonIOProcess implements MigratableProcess {
 	 */
 	
 	private volatile boolean suspending;
+	private int id;
 
 	/*
 	 *  Every class implements MigratableProcess should have a such Constructor.
@@ -32,7 +33,7 @@ public class NonIOProcess implements MigratableProcess {
 	public NonIOProcess(String[] str) {
 		this.suspending = false;
 	}
-
+	
 	@Override
 	public void run() {
 		System.out.println(TAG + " : run() begin, cnt = " + cnt);
@@ -62,6 +63,19 @@ public class NonIOProcess implements MigratableProcess {
 		System.out.println(TAG + " : resume()");
 		
 		suspending = false;
+	}
+	
+	@Override
+	public String toString() {
+		StringBuffer sb = new StringBuffer();
+        sb.append(this.getClass().getSimpleName());
+        sb.append("(" + id + "): ");        
+        return sb.toString();
+	}
+	
+	@Override
+	public void setPid(int pid) {
+		this.id = pid;
 	}
 	
 }

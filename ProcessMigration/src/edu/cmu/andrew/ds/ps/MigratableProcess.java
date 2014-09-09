@@ -18,7 +18,6 @@ import java.io.Serializable;
  */
 
 public interface MigratableProcess extends Runnable, Serializable {
-	
 	/*
 	 *  This method will be called before the object is serialized. 
 	 *  It affords an opportunity for the process to enter a known safe state.
@@ -37,4 +36,6 @@ public interface MigratableProcess extends Runnable, Serializable {
 	 *  Without this, debugging and tracing can be really painful. 
 	 */
 	public String toString();
+	
+	public void setPid(int pid);
 }

@@ -43,7 +43,7 @@ public class ProcessManager implements Runnable {
 	private MigratableProcess ps;
 	private volatile Map<Integer, MigratableProcess> _pmap = new ConcurrentSkipListMap<Integer, MigratableProcess>();
 		
-	private volatile AtomicInteger _pid; 	
+	private volatile AtomicInteger _pidCnt; 	
 	
 	/*
 	 * Singleton
@@ -57,12 +57,12 @@ public class ProcessManager implements Runnable {
 	}
 	
 	public ProcessManager() {
-		_pid = new AtomicInteger(0);
+		_pidCnt = new AtomicInteger(0);
 		_packageName = this.getClass().getPackage().getName();
 	}
 	
 	private void addProcess(MigratableProcess ps) {
-		_pmap.put(Integer.valueOf(_pid.getAndIncrement()), ps);
+		_pmap.put(Integer.valueOf(_pidCnt.getAndIncrement()), ps);
 	}
 	
 	private boolean deleteProcess(int idx) {
@@ -73,14 +73,14 @@ public class ProcessManager implements Runnable {
 		return true;
 	}
 	
-	private int getCurrentPid() {
-		return _pid.get() - 1;
+	public int getCurrentPid() {
+		return _pidCnt.get() - 1;
 	}
 	
 	private MigratableProcess getProcess(int pid) {
 		return (MigratableProcess)_pmap.get(Integer.valueOf(pid));
 	}
-	
+		
 	public void startSvr(NetworkManager nwMgr) {
 		_networkManager = nwMgr;
 		System.out.println("Type 'help' for more information");
@@ -165,6 +165,7 @@ public class ProcessManager implements Runnable {
 		}
 		
 		addProcess(ps);
+		ps.setPid(getCurrentPid());
 		System.out.println(psName + " class has been created, pid: " + getCurrentPid());
     	Thread thread = new Thread(ps);
         thread.start();

@@ -35,7 +35,6 @@ public class PMMain {
 	public static void main(String[] args) 
 			throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException, 
 			IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
-		
 		Scanner in = new Scanner(System.in);
 		String line = in.nextLine();
 		
@@ -49,12 +48,11 @@ public class PMMain {
 			showHelp();
 			return;
 		}
-		
 		in.close();
 	}
 	
 	public static void showHelp() {
-		System.out.println("Restart and selct role as Server by s or Client by c!");
-		System.exit(-1);
+		System.out.println("Restart and selct role as Server by s or Client by c");
+		System.exit(0);
 	}
 }

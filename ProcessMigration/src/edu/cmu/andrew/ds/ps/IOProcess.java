@@ -37,7 +37,7 @@ public class IOProcess implements MigratableProcess {
 	private TransactionalFileOutputStream _outputStream = null;
 	
 	private volatile boolean _suspending;
-
+	private int id;
 	/*
 	 *  Every class implements MigratableProcess should have a such Constructor.
 	 *  
@@ -53,7 +53,7 @@ public class IOProcess implements MigratableProcess {
 			e.printStackTrace();
 		}
 	}
-
+	
 	@Override
 	public void run() {
 		System.out.println(TAG + " : run() begin, readCharNum = " + _readCharNum + 
@@ -135,5 +135,18 @@ public class IOProcess implements MigratableProcess {
 		}
 		
 		_suspending = false;
+	}
+	
+	@Override
+	public String toString() {
+		StringBuffer sb = new StringBuffer();
+        sb.append(this.getClass().getSimpleName());
+        sb.append("(" + id + "): ");        
+        return sb.toString();
+	}
+
+	@Override
+	public void setPid(int pid) {
+		this.id = pid;
 	}
 }
