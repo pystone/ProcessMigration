@@ -36,6 +36,9 @@ public class PMMain {
 			throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException, 
 			IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
 		
+		System.out.println("Please choose a role you want to be: server or client.");
+		System.out.println("Make sure run the server first and then run client to connect to it.");
+		System.out.println("> ");
 		Scanner in = new Scanner(System.in);
 		String line = in.nextLine();
 		
@@ -54,7 +57,7 @@ public class PMMain {
 	}
 	
 	public static void showHelp() {
-		System.out.println("Restart and selct role as Server by s or Client by c!");
+		System.out.println("Restart and selct role as server or client.");
 		System.exit(-1);
 	}
 }
