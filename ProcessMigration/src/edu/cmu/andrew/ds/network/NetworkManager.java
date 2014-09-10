@@ -5,7 +5,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-import edu.cmu.andrew.ds.ps.MigratableProcess;
 
 /**
  * NetworkManager
@@ -26,15 +25,10 @@ public abstract class NetworkManager implements Runnable{
 		out.writeObject(msg);
 	}
 	
-	public void receiveMsg(Socket socket) {
-		ObjectInputStream inStream = null;
-		Object inObj = null;
-		try {
-			inStream = new ObjectInputStream(socket.getInputStream());
-			inObj = inStream.readObject();
-		} catch (IOException | ClassNotFoundException e) {
-			
-		}
+	public void receiveMsg(Socket socket) throws ClassNotFoundException, IOException {
+		ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
+		Object inObj = inStream.readObject();
+		
 		if (inObj instanceof MessageStruct) {
 			MessageStruct msg = (MessageStruct) inObj;
 			msgHandler(msg, socket);

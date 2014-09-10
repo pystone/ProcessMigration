@@ -4,13 +4,7 @@
 package edu.cmu.andrew.ds.network;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Map;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * ServerManager
@@ -35,25 +29,14 @@ public class ServerHandler extends Thread{
 	@Override
 	public void run() {
 		while (true) {
-			ObjectInputStream inStream = null;
-			Object inObj = null;
 			try {
-				inStream = new ObjectInputStream(_socket.getInputStream());
-				inObj = inStream.readObject();
+				_svrMgr.receiveMsg(_socket);
 			} catch (IOException | ClassNotFoundException e) {
-				
-			}
-			if (inObj instanceof MessageStruct) {
-				MessageStruct msg = (MessageStruct) inObj;
-				_svrMgr.msgHandler(msg, _socket);
+				_svrMgr.clientDisconnected(_socket);
+				break;
 			}
 		}
 		
-	}
-
-	
-	private void println(String msg) {
-		System.out.println("ServerHandler: " + msg);
 	}
 }
 

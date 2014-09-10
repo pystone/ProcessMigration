@@ -6,7 +6,6 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
@@ -15,7 +14,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import edu.cmu.andrew.ds.network.ClientManager;
 import edu.cmu.andrew.ds.network.MessageStruct;
-import edu.cmu.andrew.ds.network.NetworkManager;
 
 
 /**
@@ -254,22 +252,27 @@ public class ProcessManager {
 		
 		if (ps == null) {
 			println("WARNING: try to migrate a non-existing pid(" + idx + ")!");
+		} else {
+			ps.suspend();
 		}
-		
-		ps.suspend();
 		
 		MessageStruct msg  = new MessageStruct(3, ps);
 		try {
 			_cltMgr.sendMsg(msg);
 		} catch (IOException e) {
 			System.out.println("Network problem. Cannot migrate now.");
-			ps.resume();
+			if (ps != null) {
+				ps.resume();
+			}
 			return;
 		} 
 		
-		deleteProcess(idx);
-		System.out.println("Process " + idx + " has been emmigrated to server successfully!");
-		display();
+		if (ps != null) {
+			deleteProcess(idx);
+			System.out.println("Process " + idx + " has been emmigrated to server successfully!");
+			display();
+		}
+		
 	}
 	
 	public void immigrateFromServer(MigratableProcess proc) {
