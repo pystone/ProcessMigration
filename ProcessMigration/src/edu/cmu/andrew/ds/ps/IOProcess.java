@@ -69,7 +69,7 @@ public class IOProcess implements MigratableProcess {
 					}
 					_proc = PROCESS.SORT;
 					System.out.println("READ -> SORT");
-					Thread.sleep(500);
+					Thread.sleep(2000);
 				} catch (IOException | InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -79,7 +79,7 @@ public class IOProcess implements MigratableProcess {
         			Collections.sort(_buffer);
             		_proc = PROCESS.WRITE;
             		System.out.println("SORT -> WRITE");
-					Thread.sleep(1000);
+					Thread.sleep(3000);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}        		
@@ -91,7 +91,7 @@ public class IOProcess implements MigratableProcess {
 						_writeCharNum++;
 						Thread.sleep(200);
 					}
-					_proc = PROCESS.FINISH;
+					_proc = PROCESS.READ;
 					System.out.println("WRITE -> FINISH");
 					Thread.sleep(500);
 				} catch (IOException | InterruptedException e) {
@@ -100,7 +100,6 @@ public class IOProcess implements MigratableProcess {
         		break;
         	case FINISH:
         	default:
-        		suspend();
         		break;
         	}
 		}
