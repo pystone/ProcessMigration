@@ -36,10 +36,10 @@ import edu.cmu.andrew.ds.network.MessageStruct;
  */
 
 public class ProcessManager {
-	private static final String TAG = ProcessManager.class.getSimpleName();
 	
 	private String _packageName;
 	private ClientManager _cltMgr = null;
+	public String _prompt = "> ";
 
 	private volatile Map<Integer, MigratableProcess> _pmap = new ConcurrentSkipListMap<Integer, MigratableProcess>();
 		
@@ -84,7 +84,7 @@ public class ProcessManager {
 		System.out.println("Type 'help' for more information");
 		
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        System.out.print("> ");
+        System.out.print(_prompt);
         while (true) {
             String line = null;
             try {
@@ -94,7 +94,7 @@ public class ProcessManager {
             	return;
             }
             execCmd(line.split("\\s+"));
-            System.out.print("> ");
+            System.out.print(_prompt);
         }
 	}
 	
@@ -195,7 +195,7 @@ public class ProcessManager {
 	}
 	
 	private void println(String msg) {
-		System.out.println(TAG + ": " + msg);
+		System.out.println("ProcessManager: " + msg);
 	}
 	
 	/*

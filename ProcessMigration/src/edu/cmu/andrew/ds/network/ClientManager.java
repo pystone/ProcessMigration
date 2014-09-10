@@ -80,6 +80,11 @@ public class ClientManager extends NetworkManager {
 				_procMgr.immigrateFromServer((MigratableProcess)msg._content);
 			}
 			break;
+		case 5:
+			/* get client id from server */
+			if (msg._content instanceof Integer) {
+				_procMgr._prompt = "#" + ((Integer)msg._content).intValue() + " > ";
+			}
 		default:
 			break;
 		}

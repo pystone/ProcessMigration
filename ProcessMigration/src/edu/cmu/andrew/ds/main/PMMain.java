@@ -23,11 +23,8 @@ import edu.cmu.andrew.ds.ps.ProcessManager;
  */
 public class PMMain {
 
-	private static final String SERVER_IP_ADDR = "localhost";
-	private static final int PORT = 6777;
-	
-	private static ServerManager _server = null;
-	private static ClientManager _client = null;
+	private static final String DEFAULT_SERVER_ADDR = "localhost";
+	private static final int DEFAULT_PORT = 6777;
 	
 	/*
 	 * Everything starts from here!
@@ -42,12 +39,35 @@ public class PMMain {
 
 		Scanner in = new Scanner(System.in);
 		String line = in.nextLine();
+		String[] cmd = line.split("\\s+");
 		
-		if (line.contains("s")) {
-			ClusterManager cluster = new ClusterManager(6777);
+		if (cmd[0].contains("s")) {
+			int port = DEFAULT_PORT;
+			if (cmd.length > 1) {
+				try {
+					port = Integer.parseInt(cmd[1]);
+				} catch(NumberFormatException e) {
+					System.out.println("Error: port is not a number!");
+					in.close();
+					return;
+				}
+			}
+			ClusterManager cluster = new ClusterManager(port);
 			cluster.startServer();
-		} else if (line.contains("c")) {
-			ProcessManager client  = new ProcessManager(SERVER_IP_ADDR, PORT);
+		} else if (cmd[0].contains("c")) {
+			String svrAddr = DEFAULT_SERVER_ADDR;
+			int port = DEFAULT_PORT;
+			if (cmd.length > 2) {
+				try {
+					svrAddr = cmd[1];
+					port = Integer.parseInt(cmd[2]);
+				} catch(NumberFormatException e) {
+					System.out.println("Error: port is not a number!");
+					in.close();
+					return;
+				}
+			}
+			ProcessManager client  = new ProcessManager(svrAddr, port);
 			client.startClient();
 		} else {
 			showHelp();

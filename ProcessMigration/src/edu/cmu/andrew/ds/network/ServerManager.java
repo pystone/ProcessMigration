@@ -155,6 +155,7 @@ public class ServerManager extends NetworkManager {
 				System.out.println("New client(cid is " + getCid(socket) + ") connected!");
 				
 				new ServerHandler(this, socket).start();
+				sendMsg(socket, new MessageStruct(5, Integer.valueOf(getCid(socket))));
 			} catch (IOException e) {
 				break;
 			}
