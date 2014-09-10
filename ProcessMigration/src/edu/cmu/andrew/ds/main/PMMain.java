@@ -44,11 +44,11 @@ public class PMMain {
 		String line = in.nextLine();
 		
 		if (line.contains("s")) {
-			_server = new ServerManager(PORT);
-			ProcessManager.getInstance().startSvr(_server);
+			ClusterManager cluster = new ClusterManager(6777);
+			cluster.startServer();
 		} else if (line.contains("c")) {
-			_client = new ClientManager(SERVER_IP_ADDR, PORT);
-			ProcessManager.getInstance().startSvr(_client);
+			ProcessManager client  = new ProcessManager(SERVER_IP_ADDR, PORT);
+			client.startClient();
 		} else {
 			showHelp();
 			in.close();

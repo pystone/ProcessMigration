@@ -6,11 +6,15 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import edu.cmu.andrew.ds.network.ClientManager;
+import edu.cmu.andrew.ds.network.MessageStruct;
 import edu.cmu.andrew.ds.network.NetworkManager;
 
 
@@ -33,32 +37,24 @@ import edu.cmu.andrew.ds.network.NetworkManager;
  *
  */
 
-public class ProcessManager implements Runnable {
+public class ProcessManager {
 	private static final String TAG = ProcessManager.class.getSimpleName();
 	
 	private String _packageName;
-	private NetworkManager _networkManager = null;
-	private Thread _receiver = null;
+	private ClientManager _cltMgr = null;
 
-	private MigratableProcess ps;
 	private volatile Map<Integer, MigratableProcess> _pmap = new ConcurrentSkipListMap<Integer, MigratableProcess>();
 		
 	private volatile AtomicInteger _pidCnt; 	
 	
-	/*
-	 * Singleton
-	 */
-	private static ProcessManager self;
-	synchronized public static ProcessManager getInstance() {
-		if(self == null) {
-			self = new ProcessManager();
-		}
-		return self;
-	}
 	
-	public ProcessManager() {
+	public ProcessManager(String svrAddr, int port) {
 		_pidCnt = new AtomicInteger(0);
 		_packageName = this.getClass().getPackage().getName();
+		_cltMgr = new ClientManager(svrAddr, port);
+		_cltMgr._procMgr = this;
+		/* new thread to receive msg */
+		new Thread(_cltMgr).start();
 	}
 	
 	private void addProcess(MigratableProcess ps) {
@@ -73,21 +69,21 @@ public class ProcessManager implements Runnable {
 		return true;
 	}
 	
-	public int getCurrentPid() {
-		return _pidCnt.get() - 1;
+	private int getPid(MigratableProcess ps) {
+		for (Map.Entry<Integer, MigratableProcess> entry : _pmap.entrySet()) {
+		    if (entry.getValue() == ps) {
+		    	return entry.getKey().intValue();
+		    }
+		}
+		return -1;
 	}
 	
 	private MigratableProcess getProcess(int pid) {
 		return (MigratableProcess)_pmap.get(Integer.valueOf(pid));
 	}
 		
-	public void startSvr(NetworkManager nwMgr) {
-		_networkManager = nwMgr;
+	public void startClient() {
 		System.out.println("Type 'help' for more information");
-		
-		/* create another thread to receive msg sent from network */
-		_receiver = new Thread(this);
-		_receiver.start();
 		
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         System.out.print("> ");
@@ -114,14 +110,6 @@ public class ProcessManager implements Runnable {
 			}
 			create(Arrays.copyOfRange(arg, 1, arg.length));
 			break;
-		case "migrate":
-		case "mg":
-			if (arg.length == 1) {
-				System.out.println("Invalid command.");
-				break;
-			}
-			migrate(arg[1]);
-			break;
 		case "call":
 			if (arg.length < 3) {
 				System.out.println("Invalid command.");
@@ -146,6 +134,7 @@ public class ProcessManager implements Runnable {
 	
     private void create(String[] str) {
     	String psName = str[0];
+    	MigratableProcess ps = null;
 		try {
 			String[] s = Arrays.copyOfRange(str, 1, str.length);
 			Class<?> cls = Class.forName(_packageName+ "." + str[0]);
@@ -165,45 +154,15 @@ public class ProcessManager implements Runnable {
 		}
 		
 		addProcess(ps);
-		ps.setPid(getCurrentPid());
-		System.out.println(psName + " class has been created, pid: " + getCurrentPid());
+		ps.setPid(getPid(ps));
+		System.out.println(psName + " class has been created, pid: " + getPid(ps));
     	Thread thread = new Thread(ps);
         thread.start();
         display();
 	}
 	
 	
-	private void migrate(String strIdx) {
-		int idx = 0;		
-		
-		try {
-			idx = Integer.parseInt(strIdx);
-		} catch (NumberFormatException e) {
-			println("ERROR: invalid pid(" + strIdx + "), not a number!");
-			return;
-		}
-		
-		MigratableProcess ps = (MigratableProcess)_pmap.get(idx);
-		
-		if (ps == null) {
-			println("ERROR: try to migrate a non-existing pid(" + idx + ")!");
-			return;
-		}
-		
-		ps.suspend();
-		
-		try {
-			_networkManager.send(ps);
-		} catch (IOException e) {
-			System.out.println("Network problem. Cannot migrate now.");
-			ps.resume();
-			return;
-		} 
-		
-		deleteProcess(idx);
-		println("Migrated to network successfully!");
-		display();
-	}
+	
 	
 	private void callMethod(String[] argv) {
 		int pid = 0;
@@ -250,8 +209,7 @@ public class ProcessManager implements Runnable {
 			return;
 		}
 		System.out.println("\tpid\tClass Name");
-		for (Map.Entry<Integer, MigratableProcess> entry : _pmap.entrySet())
-		{
+		for (Map.Entry<Integer, MigratableProcess> entry : _pmap.entrySet()) {
 		    System.out.println("\t" + entry.getKey() + "\t" + entry.getValue().getClass().getName());
 		}
 	}
@@ -266,32 +224,70 @@ public class ProcessManager implements Runnable {
 	}
 	
 	private void exit() {
-		_networkManager.close();
+		_cltMgr.close();
 		System.exit(0);
 	}
-
-	@Override
-	public void run() {
-		/* wait for msg */
-		while (true) {
-			Object obj = null;
-			
-			try {
-				obj = _networkManager.receive();
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			}
-			
-			if (obj instanceof MigratableProcess) {
-				ps = (MigratableProcess) obj;
-				
-				addProcess(ps);				
-				Thread thread = new Thread(ps);
-		        thread.start();
-		        
-		        println("Migrated from network successfully!");
-		        display();
-			}
+	
+	
+	/* INTERFACE for network */
+	public void displayToServer() {
+		ArrayList<ArrayList<String>> content = new ArrayList<ArrayList<String>>();
+		for (Map.Entry<Integer, MigratableProcess> entry : _pmap.entrySet()) {
+			ArrayList<String> cur = new ArrayList<String>();
+			cur.add(String.valueOf(entry.getKey()));
+			cur.add(entry.getValue().getClass().getName());
+			content.add(cur);
+//		    System.out.println("\t" + entry.getKey() + "\t" + entry.getValue().getClass().getName());
 		}
-	}	
+		
+		MessageStruct msg = new MessageStruct(1, content);
+		try {
+			_cltMgr.sendMsg(msg);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public void emmigrateToServer(String strIdx) {
+		int idx = 0;		
+		
+		try {
+			idx = Integer.parseInt(strIdx);
+		} catch (NumberFormatException e) {
+			println("ERROR: invalid pid(" + strIdx + "), not a number!");
+			return;
+		}
+		
+		MigratableProcess ps = (MigratableProcess)_pmap.get(idx);
+		
+		if (ps == null) {
+			println("ERROR: try to migrate a non-existing pid(" + idx + ")!");
+			return;
+		}
+		
+		ps.suspend();
+		
+		MessageStruct msg  = new MessageStruct(3, ps);
+		try {
+			_cltMgr.sendMsg(msg);
+		} catch (IOException e) {
+			System.out.println("Network problem. Cannot migrate now.");
+			ps.resume();
+			return;
+		} 
+		
+		deleteProcess(idx);
+		println("Migrated to network successfully!");
+		display();
+	}
+	
+	public void immigrateFromServer(Object mp) {
+		if (mp instanceof MigratableProcess) {
+			MigratableProcess proc = (MigratableProcess) mp;
+			addProcess(proc);
+			proc.setPid(getPid(proc));
+			System.out.println("New process emmigrated! PID: " + getPid(proc));
+		}
+	}
 }

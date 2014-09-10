@@ -17,34 +17,46 @@ import edu.cmu.andrew.ds.ps.MigratableProcess;
  * @version 1.0
  * 
  */
-public abstract class NetworkManager {
+public abstract class NetworkManager implements Runnable{
 	
-	Socket _socket = null;
-	boolean _terminated = false;
+	public void sendMsg(Socket socket, MessageStruct msg) throws IOException {
+		ObjectOutputStream out;
+		
+		out = new ObjectOutputStream(socket.getOutputStream());
+		out.writeObject(msg);
+	}
 	
-	public Object receive() throws ClassNotFoundException {
-		ObjectInputStream in = null;
-		Object inprocess = null;
+	public void receiveMsg(Socket socket) {
+		ObjectInputStream inStream = null;
+		Object inObj = null;
 		try {
-			in = new ObjectInputStream(_socket.getInputStream());
-			inprocess = in.readObject();
-		} catch (IOException e) {
-			return null;
+			inStream = new ObjectInputStream(socket.getInputStream());
+			inObj = inStream.readObject();
+		} catch (IOException | ClassNotFoundException e) {
+			
+		}
+		if (inObj instanceof MessageStruct) {
+			MessageStruct msg = (MessageStruct) inObj;
+			msgHandler(msg, socket);
 		}
 		
-		return inprocess;
 	}
 	
-	public void send(MigratableProcess mp) throws IOException {
-		ObjectOutputStream out = new ObjectOutputStream(_socket.getOutputStream());
-		out.writeObject(mp);
-	}
-	
-	public void close() {
+	public void close(Socket socket) {
 		try {
-			_socket.close();
+			socket.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
+	
+//	public void close() {
+//		try {
+//			_socket.close();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//	}
+	
+	public abstract void msgHandler(MessageStruct msg, Socket src);
 }
