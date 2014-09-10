@@ -25,7 +25,6 @@ import java.io.Serializable;
  */
 
 public class TransactionalFileOutputStream  extends OutputStream implements Serializable {
-	private static final String TAG = TransactionalFileOutputStream.class.getSimpleName();
 	
 	/*
 	 * In order to improve performance, you can also choose to “cache” these connections by reusing them, 
@@ -41,6 +40,8 @@ public class TransactionalFileOutputStream  extends OutputStream implements Seri
 	
 	public TransactionalFileOutputStream(String path) throws IOException {
 		this._dst = new File(path);
+		/* to allow all other users can write */
+		Runtime.getRuntime().exec("chmod 777 " + path);
         this._pos = 0;
         this._migrated = false;
 	}
@@ -125,7 +126,7 @@ public class TransactionalFileOutputStream  extends OutputStream implements Seri
 	}
 	
 	private void println(String msg) {
-		System.out.println(TAG + ": " + msg);
+		System.out.println("TransactionalFileOutputStream: " + msg);
 	}
 
     /**

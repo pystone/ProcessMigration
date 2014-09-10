@@ -12,14 +12,26 @@ import edu.cmu.andrew.ds.network.ServerManager;
 
 
 /**
+ * ClusterManager
+ * 
+ * When working as server, ClusterManager is the main control class of the program.
+ * It will start a new thread of Server Manager to do all the network stuffs like 
+ * waiting for, read from and write to clients. Also, it support user input to 
+ * check status of all clients and migrate process. 
+ * 
+ * Support input command:
+ * 		migrate SRC_CID SRC_PID DST_PID: migrate the process SRC_PID in client 
+ * 			SRC_CID to client DST_PID. All three arguments should be specified.
+ * 		ps: show all the processes running on all clients.
+ * 		exit: close the server program. All clients connected to this server shall
+ * 			be CLOSED once server exits.
+ * 
  * @author PY
  *
  */
 public class ClusterManager {
 	
 	ServerManager _svrMgr = null;
-	
-	
 	
 	public ClusterManager(int port) {
 		_svrMgr = new ServerManager(port);

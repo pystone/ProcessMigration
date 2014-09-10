@@ -29,11 +29,11 @@ public class PMMain {
 	/*
 	 * Everything starts from here!
 	 */
-	public static void main(String[] args) 
-			throws IOException, InstantiationException, IllegalAccessException, ClassNotFoundException, 
-			IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
+	public static void main(String[] args) {
 		
 		System.out.println("Please choose a role you want to be: server or client.");
+		System.out.println("server PORT - The port to listen to. 6777 is set default if not specified.");
+		System.out.println("client SERVER_ADDRESS PORT - The server address and port to connect to. localhost:6777 is set default if not specified.");
 		System.out.println("Make sure run the server first and then run client to connect to it.");
 		System.out.println("> ");
 
@@ -42,6 +42,7 @@ public class PMMain {
 		String[] cmd = line.split("\\s+");
 		
 		if (cmd[0].contains("s")) {
+			/* work as server */
 			int port = DEFAULT_PORT;
 			if (cmd.length > 1) {
 				try {
@@ -52,9 +53,11 @@ public class PMMain {
 					return;
 				}
 			}
+			
 			ClusterManager cluster = new ClusterManager(port);
 			cluster.startServer();
 		} else if (cmd[0].contains("c")) {
+			/* work as client */
 			String svrAddr = DEFAULT_SERVER_ADDR;
 			int port = DEFAULT_PORT;
 			if (cmd.length > 2) {
@@ -67,6 +70,7 @@ public class PMMain {
 					return;
 				}
 			}
+			
 			ProcessManager client  = new ProcessManager(svrAddr, port);
 			client.startClient();
 		} else {

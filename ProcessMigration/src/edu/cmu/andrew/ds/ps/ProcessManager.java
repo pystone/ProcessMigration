@@ -1,6 +1,7 @@
 package edu.cmu.andrew.ds.ps;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
@@ -104,6 +105,10 @@ public class ProcessManager {
 		case "ct":
 			if (arg.length == 1) {
 				System.out.println("Invalid command.");
+				break;
+			}
+			if (arg[0].equals("IOProcess") && arg.length!=4) {
+				System.out.println("Please specify the input and output file.");
 				break;
 			}
 			create(Arrays.copyOfRange(arg, 1, arg.length));

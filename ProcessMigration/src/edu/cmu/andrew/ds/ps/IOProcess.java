@@ -1,5 +1,6 @@
 package edu.cmu.andrew.ds.ps;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,8 +48,12 @@ public class IOProcess implements MigratableProcess {
 	public IOProcess(String[] str) {
 		this._suspending = false;
 		try {
+			File outFile = new File(str[1]);
+			outFile.delete();
+			
 			this._inputStream = new TransactionalFileInputStream(str[0]);
-			this._outputStream = new TransactionalFileOutputStream(str[1]);			
+			this._outputStream = new TransactionalFileOutputStream(str[1]);	
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
