@@ -39,6 +39,9 @@ public class IOProcess implements MigratableProcess {
 	
 	private volatile boolean _suspending;
 	private int id;
+	
+	private static final int MAX_LOOP_NUM = 5;
+	private int loopNum = 0;
 	/*
 	 *  Every class implements MigratableProcess should have a such Constructor.
 	 *  
@@ -96,7 +99,7 @@ public class IOProcess implements MigratableProcess {
 						_writeCharNum++;
 						Thread.sleep(200);
 					}
-					_proc = PROCESS.READ;
+					_proc = PROCESS.FINISH;
 					System.out.println("WRITE -> FINISH");
 					Thread.sleep(500);
 				} catch (IOException | InterruptedException e) {
@@ -104,6 +107,15 @@ public class IOProcess implements MigratableProcess {
 				} 
         		break;
         	case FINISH:
+        		loopNum++;
+				if(loopNum == MAX_LOOP_NUM) {
+					_suspending = true;
+					System.out.println("JOB COMPLETED");
+					return;
+				}				
+				_proc = PROCESS.READ;
+				System.out.println("FINISH -> READ");
+				break;
         	default:
         		break;
         	}

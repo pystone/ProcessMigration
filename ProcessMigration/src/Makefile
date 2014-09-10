@@ -11,7 +11,6 @@ CLASSES = \
 	./edu/cmu/andrew/ds/io/TransactionalFileOutputStream.java \
 	./edu/cmu/andrew/ds/network/ClientManager.java \
 	./edu/cmu/andrew/ds/network/NetworkManager.java \
-	./edu/cmu/andrew/ds/network/CommunicationManager.java \
 	./edu/cmu/andrew/ds/network/MessageStruct.java \
 	./edu/cmu/andrew/ds/network/ServerHandler.java \
 	./edu/cmu/andrew/ds/network/ServerManager.java \
@@ -27,7 +26,6 @@ RMCLASSES = \
 	./edu/cmu/andrew/ds/io/TransactionalFileOutputStream.class \
 	./edu/cmu/andrew/ds/network/ClientManager.class \
 	./edu/cmu/andrew/ds/network/NetworkManager.class \
-	./edu/cmu/andrew/ds/network/CommunicationManager.class \
 	./edu/cmu/andrew/ds/network/MessageStruct.class \
 	./edu/cmu/andrew/ds/network/ServerHandler.class \
 	./edu/cmu/andrew/ds/network/ServerManager.class \
