@@ -102,12 +102,14 @@ public class IOProcess implements MigratableProcess {
 				} 
         		break;
         	case FINISH:
-        		_proc = PROCESS.READ;
-				System.out.println("FINISH -> READ");
-				loopNum++;
+        		loopNum++;
 				if(loopNum == MAX_LOOP_NUM) {
 					_suspending = true;
-				}
+					System.out.println("JOB COMPLETED");
+					return;
+				}				
+				_proc = PROCESS.READ;
+				System.out.println("FINISH -> READ");
 				break;
         	default:
         		break;
