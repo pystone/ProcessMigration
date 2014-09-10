@@ -6,16 +6,22 @@ package edu.cmu.andrew.ds.main;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import edu.cmu.andrew.ds.network.ServerManager;
+
+
 
 /**
  * @author PY
  *
  */
 public class ClusterManager {
+	
 	ServerManager _svrMgr = null;
+	
+	
 	
 	public ClusterManager(int port) {
 		_svrMgr = new ServerManager(port);
@@ -42,7 +48,7 @@ public class ClusterManager {
 		switch(arg[0]) {
 		case "migrate":
 		case "mg":
-			if (arg.length == 1) {
+			if (arg.length != 4) {
 				System.out.println("Invalid command.");
 				break;
 			}
@@ -65,7 +71,17 @@ public class ClusterManager {
 	}
 	
 	private void migrate(String[] arg) {
+		int srcCid, srcPid, dstCid;
+		try {
+			srcCid = Integer.parseInt(arg[1]);
+			srcPid = Integer.parseInt(arg[2]);
+			dstCid = Integer.parseInt(arg[3]);
+		} catch (NumberFormatException e) {
+			println("Invalid argument!");
+			return;
+		}
 		
+		_svrMgr.sendMigrateRequest(srcCid, srcPid, dstCid);
 	}
 	
 	private void display() {

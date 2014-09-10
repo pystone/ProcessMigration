@@ -237,7 +237,6 @@ public class ProcessManager {
 			cur.add(String.valueOf(entry.getKey()));
 			cur.add(entry.getValue().getClass().getName());
 			content.add(cur);
-//		    System.out.println("\t" + entry.getKey() + "\t" + entry.getValue().getClass().getName());
 		}
 		
 		MessageStruct msg = new MessageStruct(1, content);
@@ -249,21 +248,12 @@ public class ProcessManager {
 		}
 	}
 	
-	public void emmigrateToServer(String strIdx) {
-		int idx = 0;		
-		
-		try {
-			idx = Integer.parseInt(strIdx);
-		} catch (NumberFormatException e) {
-			println("ERROR: invalid pid(" + strIdx + "), not a number!");
-			return;
-		}
+	public void emmigrateToServer(int idx) {
 		
 		MigratableProcess ps = (MigratableProcess)_pmap.get(idx);
 		
 		if (ps == null) {
-			println("ERROR: try to migrate a non-existing pid(" + idx + ")!");
-			return;
+			println("WARNING: try to migrate a non-existing pid(" + idx + ")!");
 		}
 		
 		ps.suspend();
@@ -278,16 +268,16 @@ public class ProcessManager {
 		} 
 		
 		deleteProcess(idx);
-		println("Migrated to network successfully!");
+		System.out.println("Process " + idx + " has been emmigrated to server successfully!");
 		display();
 	}
 	
-	public void immigrateFromServer(Object mp) {
-		if (mp instanceof MigratableProcess) {
-			MigratableProcess proc = (MigratableProcess) mp;
-			addProcess(proc);
-			proc.setPid(getPid(proc));
-			System.out.println("New process emmigrated! PID: " + getPid(proc));
-		}
+	public void immigrateFromServer(MigratableProcess proc) {
+		proc.resume();
+		new Thread(proc).start();
+		
+		addProcess(proc);
+		proc.setPid(getPid(proc));
+		System.out.println("New process immigrated! PID: " + getPid(proc));
 	}
 }

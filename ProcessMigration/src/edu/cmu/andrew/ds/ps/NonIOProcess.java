@@ -78,4 +78,9 @@ public class NonIOProcess implements MigratableProcess {
 		this.id = pid;
 	}
 	
+	@Override
+	public int getPid() {
+		return this.id;
+	}
+	
 }

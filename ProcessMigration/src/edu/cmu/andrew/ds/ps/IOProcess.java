@@ -149,4 +149,9 @@ public class IOProcess implements MigratableProcess {
 	public void setPid(int pid) {
 		this.id = pid;
 	}
+	
+	@Override
+	public int getPid() {
+		return this.id;
+	}
 }

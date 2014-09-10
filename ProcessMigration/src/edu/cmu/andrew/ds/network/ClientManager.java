@@ -3,6 +3,7 @@ package edu.cmu.andrew.ds.network;
 import java.io.IOException;
 import java.net.Socket;
 
+import edu.cmu.andrew.ds.ps.MigratableProcess;
 import edu.cmu.andrew.ds.ps.ProcessManager;
 
 /**
@@ -55,17 +56,29 @@ public class ClientManager extends NetworkManager {
 	public void msgHandler(MessageStruct msg, Socket src) {
 		switch (msg._code) {
 		case 0:
+			/* gather process info and send to server */
 			_procMgr.displayToServer();
 			break;
 		case 1:
+			/* message type sent from client to server */
 			break;
 		case 2:
-			_procMgr.emmigrateToServer("0");
+			/* request from server to migrate a process */
+			if (msg._content instanceof Integer) {
+				int pid = ((Integer)msg._content).intValue();
+				System.out.println("Request from server to emmigrate process " + pid);
+				_procMgr.emmigrateToServer(pid);
+			}
+			
 			break;
 		case 3:
+			/* message type sent from client to server */
 			break;
 		case 4:
-			_procMgr.immigrateFromServer(msg._content);
+			/* immigrating process sent from server */
+			if (msg._content instanceof MigratableProcess) {
+				_procMgr.immigrateFromServer((MigratableProcess)msg._content);
+			}
 			break;
 		default:
 			break;
