@@ -88,7 +88,13 @@ public class ClientManager extends NetworkManager {
 	@Override
 	public void run() {
 		while(true) {
-			receiveMsg(_socket);
+			try {
+				receiveMsg(_socket);
+			} catch (ClassNotFoundException | IOException e) {
+				System.out.println("Connection to server is broken. Please restart client.");
+				close(_socket);
+				System.exit(-1);
+			}
 		}
 	}
 }

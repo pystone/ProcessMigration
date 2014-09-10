@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -92,6 +91,10 @@ public class ServerManager extends NetworkManager {
 	}
 	
 	private void displayFromClient(ArrayList<ArrayList<String>> proc, int srcCid) {
+		if (proc.isEmpty()) {
+			System.out.println("Client " + srcCid + " has no running process.");
+			return;
+		}
 		for (ArrayList<String> p : proc) {
 			System.out.println("\t" + srcCid + "\t" + p.get(0) + "\t" + p.get(1));
 		}
@@ -101,7 +104,13 @@ public class ServerManager extends NetworkManager {
 		for (MigrateTask i: _migrateTasks) {
 			if (i._srcCid==srcCid && i._srcPid==mp.getPid()) {
 				try {
-					sendMsg(getClient(i._dstCid), new MessageStruct(4, mp));
+					Socket dst = getClient(i._dstCid);
+					if (dst == null) {
+						System.out.println("Connection to " + i._dstCid + " is broken! Cannot migrate process to it. Process lost.");
+						return;
+					}
+					
+					sendMsg(dst, new MessageStruct(4, mp));
 				} catch (IOException e) {
 					println("Connection to " + i._dstCid + " is broken! Cannot migrate process to it. Process lost.");
 				}
@@ -147,10 +156,16 @@ public class ServerManager extends NetworkManager {
 				
 				new ServerHandler(this, socket).start();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				break;
 			}
 		}
+	}
+	
+	public void clientDisconnected(Socket client) {
+		int cid = getCid(client);
+		System.out.println("Client " + cid + " has disconnected.");
+		
+		deleteClient(cid);
 	}
 	
 	private void println(String msg) {
@@ -179,6 +194,10 @@ public class ServerManager extends NetworkManager {
 			System.out.println("Cannot migrate. Client " + srcCid + " is not available!");
 			return;
 		}
+		if (getClient(dstCid) == null) {
+			System.out.println("Cannot migrate. Client " + dstCid + " is not available!");
+			return;
+		}
 		
 		_migrateTasks.add(new MigrateTask(srcCid, srcPid, dstCid));
 		try {
@@ -187,5 +206,16 @@ public class ServerManager extends NetworkManager {
 			println("ERROR: Connection with " + srcCid + " is broken, message cannot be sent!");
 			return;
 		}
+	}
+	
+	public void close() {
+		System.out.println("Server is about to close. All connected clients will exit.");
+		try {
+			_svrSocket.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		System.out.println("Bye~");
 	}
 }
