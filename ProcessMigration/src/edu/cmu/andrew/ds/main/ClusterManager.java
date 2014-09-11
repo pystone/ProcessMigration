@@ -20,24 +20,35 @@ import edu.cmu.andrew.ds.network.ServerManager;
  * check status of all clients and migrate process. 
  * 
  * Support input command:
- * 		migrate SRC_CID SRC_PID DST_PID: migrate the process SRC_PID in client 
- * 			SRC_CID to client DST_PID. All three arguments should be specified.
- * 		ps: show all the processes running on all clients.
- * 		exit: close the server program. All clients connected to this server shall
+ * 		migrate SRC_CID SRC_PID DST_PID: 
+ * 			Migrate the process SRC_PID in client SRC_CID to client DST_PID. 
+ * 			All three arguments should be specified.
+ * 		ps: 
+ * 			Show all the processes running on all clients.
+ * 		help: 
+ * 			Show all the accepted input commands.
+ * 		exit: 
+ * 			Close the server program. All clients connected to this server will
  * 			be CLOSED once server exits.
  * 
- * @author PY
+ * @author KAIILANG CHEN(kailianc)
+ * @author YANG PAN(yangpan)
+ * @version 1.0
  *
  */
 public class ClusterManager {
-	
+	/* ServerManager handles all the network operations */
 	ServerManager _svrMgr = null;
 	
 	public ClusterManager(int port) {
+		/* create a new thread to accepte incoming clients */ 
 		_svrMgr = new ServerManager(port);
 		new Thread(_svrMgr).start();
 	}
 
+	/*
+	 * Accepting user input and handling them.
+	 */
 	public void startServer() {
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         System.out.print("> ");
@@ -54,6 +65,20 @@ public class ClusterManager {
         }
 	}
 	
+/* ================== Input handlers begin ==================*/
+	/*
+	 * Support input command:
+	 * 		migrate SRC_CID SRC_PID DST_PID: 
+	 * 			Migrate the process SRC_PID in client SRC_CID to client DST_PID. 
+	 * 			All three arguments should be specified.
+	 * 		ps: 
+	 * 			Show all the processes running on all clients.
+	 * 		help: 
+	 * 			Show all the accepted input commands.
+	 * 		exit: 
+	 * 			Close the server program. All clients connected to this server will
+	 * 			be CLOSED once server exits.
+	 */
 	private void execCmd(String[] arg) {
 		switch(arg[0]) {
 		case "migrate":
@@ -104,9 +129,24 @@ public class ClusterManager {
 	}
 	
 	private void help() {
+		System.out.println("Support input command:");
+		System.out.println("\tmigrate SRC_CID SRC_PID DST_PID: ");
+		System.out.println("\t\tmigrate the process SRC_PID in client SRC_CID to client DST_PID.");
+		System.out.println("\t\tAll three arguments should be specified.");
+		System.out.println("\tps:");
+		System.out.println("\t\tShow all the processes running on all clients.");
+		System.out.println("\thelp:");
+		System.out.println("\t\tShow all the accepted input commands.");
+		System.out.println("\texit:");
+		System.out.println("\t\tClose the server program. All clients connected to this server will");
+		System.out.println("\t\tbe CLOSED once server exits.");
 		
 	}
+/* ================== Input handlers end ==================*/
 	
+	/*
+	 * Internal debug print method.
+	 */
 	private void println(String msg) {
 		System.out.println("ClusterManager: " + msg);
 	}

@@ -11,8 +11,33 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import edu.cmu.andrew.ds.ps.MigratableProcess;
 
+/**
+ * ServerManager
+ * 
+ * Responsible for all the network communications in server side. 
+ * 
+ * In a new thread, it will run a loop accepting all the incoming clients 
+ * and create a new instance of ServerHandler in a new thread reading incoming
+ * message from connected clients. 
+ * 
+ * In the main thread, it provides a message handler handling all the incoming
+ * messages. Also, it has interfaces serving ClusterMaster.
+ * 
+ * @author KAIILANG CHEN(kailianc)
+ * @author YANG PAN(yangpan)
+ * @version 1.0
+ */
 public class ServerManager extends NetworkManager {
 	
+	/**
+	 * MigrateTaks
+	 * 
+	 * A structure caching the migrate task info. Before requesting a client to
+	 * emigrate a process, ServerManager will create a new instance of MigrateTask
+	 * and cache it in _migrateTasks. After receiving the respond from the requested
+	 * client, ServerManager will check _migrateTasks and find the destination and 
+	 * send it there.
+	 */
 	public class MigrateTask {
 		int _srcCid;
 		int _srcPid;
@@ -22,19 +47,14 @@ public class ServerManager extends NetworkManager {
 			_srcPid = srcPid;
 			_dstCid = dstCid;
 		}
-		boolean compare(MigrateTask a) {
-			if (_srcCid == a._srcCid && _srcPid == a._srcPid 
-					&& _dstCid == a._dstCid) {
-				return true;
-			}
-			return false;
-		}
 	}
 	
-
 	private ServerSocket _svrSocket = null;
+	/* manage the increasing client id to assign a new client an id */
 	private volatile AtomicInteger _cid = null;
+	/* maintain the map between client id and socket of a client */
 	private volatile Map<Integer, Socket> _clients = null;
+	/* cache the migrate task info before receiving respond */
 	ArrayList<MigrateTask> _migrateTasks = null;
 	
 	public ServerManager(int svrPort) {
@@ -48,13 +68,19 @@ public class ServerManager extends NetworkManager {
 			System.out.println("Waiting for clients...");
 			System.out.println("Please connect to " + InetAddress.getLocalHost() + ":" + svrPort + ".");
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			println("ERROR: failed to listen on port " + svrPort);
 			e.printStackTrace();
 		}
-		
-		
 	}
 	
+	/*
+	 * All messages coming from clients will be sent here. Currently server only needs
+	 * to respond to two types of messages: type 1 and 3. For more details about the 
+	 * message type, see MessageStruct.
+	 * 
+	 * @param msg	incoming message
+	 * @param src	socket of client sending this message
+	 */
 	@Override
 	public void msgHandler(MessageStruct msg, Socket src) {
 		switch (msg._code) {
@@ -90,6 +116,9 @@ public class ServerManager extends NetworkManager {
 		}
 	}
 	
+	/*
+	 * Print the process information of a client.
+	 */
 	private void displayFromClient(ArrayList<ArrayList<String>> proc, int srcCid) {
 		if (proc.isEmpty()) {
 			System.out.println("Client " + srcCid + " has no running process.");
@@ -100,6 +129,10 @@ public class ServerManager extends NetworkManager {
 		}
 	}
 	
+	/*
+	 * Migrate a process to a client. The destination can be found in _migrateTasks 
+	 * with the src_pic and src_cid.
+	 */
 	private void migrateToClient(MigratableProcess mp, int srcCid) {
 		for (MigrateTask i: _migrateTasks) {
 			if (i._srcCid==srcCid && i._srcPid==mp.getPid()) {
@@ -120,6 +153,7 @@ public class ServerManager extends NetworkManager {
 		}
 	}
 	
+/* ================== Client info manage methods begin ==================*/
 	private void addClient(Socket socket) {
 		_clients.put(Integer.valueOf(_cid.getAndIncrement()), socket);
 	}
@@ -144,19 +178,28 @@ public class ServerManager extends NetworkManager {
 		}
 		return -1;
 	}
+/* ================== Client info manage methods end ==================*/
 	
+	/*
+	 * Run a loop to accept incoming clients. Once a connection is established, 
+	 * create a new instance of ServerHandler in a new thread to receive
+	 * incoming messages by running a loop.
+	 */
 	@Override
 	public void run() {
-		/* accepting new clients */
 		while (true) {
 			try {
+				/* accepting new clients */
 				Socket socket = _svrSocket.accept();
 				addClient(socket);
 				System.out.println("New client(cid is " + getCid(socket) + ") connected!");
 				
+				/* create a new instance of ServerHandler to receive messages */
 				new ServerHandler(this, socket).start();
+				/* send the client id to the new client */
 				sendMsg(socket, new MessageStruct(5, Integer.valueOf(getCid(socket))));
 			} catch (IOException e) {
+				/* ServerSocket is closed */
 				break;
 			}
 		}
@@ -169,11 +212,7 @@ public class ServerManager extends NetworkManager {
 		deleteClient(cid);
 	}
 	
-	private void println(String msg) {
-		System.out.println("ServerManager: " + msg);
-	}
-	
-	/* INTERFACE for cluster manager */
+/* ================== Interfaces for cluster manager begin ==================*/
 	public void examClients() {
 		System.out.println("Processes running on all clients: ");
 		System.out.println("\tCID\tPID\tCLASSNAME");
@@ -218,5 +257,13 @@ public class ServerManager extends NetworkManager {
 			e.printStackTrace();
 		}
 		System.out.println("Bye~");
+	}
+/* ================== Interfaces for cluster manager end ==================*/
+	
+	/*
+	 * Internal debug print method.
+	 */
+	private void println(String msg) {
+		System.out.println("ServerManager: " + msg);
 	}
 }
