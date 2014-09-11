@@ -9,7 +9,13 @@ import edu.cmu.andrew.ds.ps.ProcessManager;
 /**
  * ClientManager
  * 
- * Client side class to create and connect to server functions.
+ * Responsible for all the network communications in client side.
+ * 
+ * In a new thread, it will run a loop receiving messages sent from server and 
+ * dispatch it to the main thread to handle.
+ * 
+ * In the main thread, it provides a message handler handling all the incoming
+ * messages. Also, it has interfaces serving ProcessManager.
  * 
  * @author KAIILANG CHEN(kailianc)
  * @author YANG PAN(yangpan)
@@ -18,40 +24,47 @@ import edu.cmu.andrew.ds.ps.ProcessManager;
  */
 public class ClientManager extends NetworkManager {
 	
-	String _svrAddr = null;
-	int _svrPort = 0;
+	/* the socket communicating with server */
 	Socket _socket = null;
-	
+	/* instance of ProcessManager to callback */
 	public ProcessManager _procMgr = null;
 	
 	public ClientManager(String addr, int port) {
 		try {
-			_svrAddr = addr;
-			_svrPort = port;
 			_socket = new Socket(addr, port);
-			System.out.println("Connected to server: " + _svrAddr + ":" + _svrPort);
-			
-//			receiveMsg(_socket);
+			System.out.println("Connected to server: " + addr + ":" + port);
 		} catch (IOException e) {
-			System.out.println("Cannot connect to server " + _svrAddr + ":" + _svrPort);
+			System.out.println("Cannot connect to server " + addr + ":" + port);
 			e.setStackTrace(e.getStackTrace());
 			System.exit(0);
 		}
 	}
 	
+/* ================== Interfaces for ProcessManager begin ==================*/
 	public void sendMsg(MessageStruct msg) throws IOException {
 		sendMsg(_socket, msg);
 	}
 	
+	/*
+	 * Close the socket to exit.
+	 */
 	public void close() {
 		try {
 			_socket.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
+/* ================== Interfaces for ProcessManager end ==================*/
 	
+	/*
+	 * All messages coming from server will be sent here. Currently client needs to respond 
+	 * to three types of messages: type 0, 2, 4 and 5. For more details about the message 
+	 * type, see MessageStruct.
+	 * 
+	 * @param msg	incoming message
+	 * @param src	not used in client
+	 */
 	@Override
 	public void msgHandler(MessageStruct msg, Socket src) {
 		switch (msg._code) {
@@ -90,6 +103,10 @@ public class ClientManager extends NetworkManager {
 		}
 	}
 	
+	/*
+	 * Running a loop to receive messages from server. If it fails when receiving, the 
+	 * connections is broken. Close the socket and exit with -1.
+	 */
 	@Override
 	public void run() {
 		while(true) {

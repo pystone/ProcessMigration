@@ -9,7 +9,8 @@ import java.net.Socket;
 /**
  * ServerManager
  * 
- * Server side class to prepare and wait for client connection functions.
+ * Server side class to prepare and wait for messages from a client specified
+ * by _socket.
  * 
  * @author KAIILANG CHEN(kailianc)
  * @author YANG PAN(yangpan)
@@ -17,8 +18,9 @@ import java.net.Socket;
  * 
  */
 public class ServerHandler extends Thread{
-	
+	/* the socket to receive messages from */
 	private Socket _socket = null;
+	/* used for callback */
 	public ServerManager _svrMgr = null;
 	
 	public ServerHandler(ServerManager svrMgr, Socket socket) {
@@ -26,6 +28,11 @@ public class ServerHandler extends Thread{
 		_socket = socket;
 	}
 	
+	/*
+	 * Keep running a loop to receive messages from a client specified by 
+	 * _socket. Once the connection is broken, call ServerManager to 
+	 * remove this client.
+	 */
 	@Override
 	public void run() {
 		while (true) {

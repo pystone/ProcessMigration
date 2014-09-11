@@ -21,7 +21,7 @@ import edu.cmu.andrew.ds.ps.MigratableProcess;
  * message from connected clients. 
  * 
  * In the main thread, it provides a message handler handling all the incoming
- * messages. Also, it has interfaces serving ClusterMaster.
+ * messages. Also, it has interfaces serving ClusterManager.
  * 
  * @author KAIILANG CHEN(kailianc)
  * @author YANG PAN(yangpan)
@@ -50,10 +50,13 @@ public class ServerManager extends NetworkManager {
 	}
 	
 	private ServerSocket _svrSocket = null;
+	
 	/* manage the increasing client id to assign a new client an id */
 	private volatile AtomicInteger _cid = null;
+	
 	/* maintain the map between client id and socket of a client */
 	private volatile Map<Integer, Socket> _clients = null;
+	
 	/* cache the migrate task info before receiving respond */
 	ArrayList<MigrateTask> _migrateTasks = null;
 	
@@ -73,6 +76,39 @@ public class ServerManager extends NetworkManager {
 		}
 	}
 	
+	/*
+	 * Run a loop to accept incoming clients. Once a connection is established, 
+	 * create a new instance of ServerHandler in a new thread to receive
+	 * incoming messages by running a loop.
+	 */
+	@Override
+	public void run() {
+		while (true) {
+			try {
+				/* accepting new clients */
+				Socket socket = _svrSocket.accept();
+				addClient(socket);
+				System.out.println("New client(cid is " + getCid(socket) + ") connected!");
+				
+				/* create a new instance of ServerHandler to receive messages */
+				new ServerHandler(this, socket).start();
+				/* send the client id to the new client */
+				sendMsg(socket, new MessageStruct(5, Integer.valueOf(getCid(socket))));
+			} catch (IOException e) {
+				/* ServerSocket is closed */
+				break;
+			}
+		}
+	}
+	
+	public void clientDisconnected(Socket client) {
+		int cid = getCid(client);
+		System.out.println("Client " + cid + " has disconnected.");
+		
+		deleteClient(cid);
+	}
+	
+/* ================== Message handlers begin ==================*/
 	/*
 	 * All messages coming from clients will be sent here. Currently server only needs
 	 * to respond to two types of messages: type 1 and 3. For more details about the 
@@ -117,7 +153,7 @@ public class ServerManager extends NetworkManager {
 	}
 	
 	/*
-	 * Print the process information of a client.
+	 * Receiving the process information of a client and printing it.
 	 */
 	private void displayFromClient(ArrayList<ArrayList<String>> proc, int srcCid) {
 		if (proc.isEmpty()) {
@@ -130,12 +166,12 @@ public class ServerManager extends NetworkManager {
 	}
 	
 	/*
-	 * Migrate a process to a client. The destination can be found in _migrateTasks 
-	 * with the src_pic and src_cid.
+	 * Receiving a process from a client and migrating that to another client. The destination 
+	 * can be found in _migrateTasks with the src_pic and src_cid.
 	 */
 	private void migrateToClient(MigratableProcess mp, int srcCid) {
 		for (MigrateTask i: _migrateTasks) {
-			if (i._srcCid==srcCid && i._srcPid==mp.getPid()) {
+			if (i._srcCid==srcCid && i._srcPid==mp._pid) {
 				try {
 					Socket dst = getClient(i._dstCid);
 					if (dst == null) {
@@ -152,6 +188,7 @@ public class ServerManager extends NetworkManager {
 			}
 		}
 	}
+/* ================== Message handlers end ==================*/
 	
 /* ================== Client info manage methods begin ==================*/
 	private void addClient(Socket socket) {
@@ -180,39 +217,10 @@ public class ServerManager extends NetworkManager {
 	}
 /* ================== Client info manage methods end ==================*/
 	
+/* ================== Interfaces for ClusterManager begin ==================*/
 	/*
-	 * Run a loop to accept incoming clients. Once a connection is established, 
-	 * create a new instance of ServerHandler in a new thread to receive
-	 * incoming messages by running a loop.
+	 * Send request to all clients to send the process info to server.
 	 */
-	@Override
-	public void run() {
-		while (true) {
-			try {
-				/* accepting new clients */
-				Socket socket = _svrSocket.accept();
-				addClient(socket);
-				System.out.println("New client(cid is " + getCid(socket) + ") connected!");
-				
-				/* create a new instance of ServerHandler to receive messages */
-				new ServerHandler(this, socket).start();
-				/* send the client id to the new client */
-				sendMsg(socket, new MessageStruct(5, Integer.valueOf(getCid(socket))));
-			} catch (IOException e) {
-				/* ServerSocket is closed */
-				break;
-			}
-		}
-	}
-	
-	public void clientDisconnected(Socket client) {
-		int cid = getCid(client);
-		System.out.println("Client " + cid + " has disconnected.");
-		
-		deleteClient(cid);
-	}
-	
-/* ================== Interfaces for cluster manager begin ==================*/
 	public void examClients() {
 		System.out.println("Processes running on all clients: ");
 		System.out.println("\tCID\tPID\tCLASSNAME");
@@ -228,6 +236,11 @@ public class ServerManager extends NetworkManager {
 		}
 	}
 	
+	/*
+	 * After receiving user input to migrate process, use this method to send request to 
+	 * source client to suspend that process and send it to server. This method also
+	 * caches this migration task info in _migrateTask for future use. 
+	 */
 	public void sendMigrateRequest(int srcCid, int srcPid, int dstCid) {
 		Socket socket = getClient(srcCid);
 		if (socket == null) {
@@ -239,6 +252,7 @@ public class ServerManager extends NetworkManager {
 			return;
 		}
 		
+		/* cache the migrate task info for future use */
 		_migrateTasks.add(new MigrateTask(srcCid, srcPid, dstCid));
 		try {
 			sendMsg(socket, new MessageStruct(2, Integer.valueOf(srcPid)));
@@ -258,7 +272,7 @@ public class ServerManager extends NetworkManager {
 		}
 		System.out.println("Bye~");
 	}
-/* ================== Interfaces for cluster manager end ==================*/
+/* ================== Interfaces for ClusterManager end ==================*/
 	
 	/*
 	 * Internal debug print method.

@@ -26,6 +26,8 @@ import java.io.Serializable;
  */
 
 public class TransactionalFileInputStream extends InputStream implements Serializable {
+	private static final long serialVersionUID = 8418840253669323271L;
+
 	private static final String TAG = TransactionalFileInputStream.class.getSimpleName();
 	
 	/*

@@ -19,7 +19,9 @@ import edu.cmu.andrew.ds.io.TransactionalFileOutputStream;
  * @version 1.0
  * 
  */
-public class IOProcess implements MigratableProcess {	
+public class IOProcess extends MigratableProcess {	
+	private static final long serialVersionUID = -5736138960128297174L;
+
 	private static final String TAG = IOProcess.class.getSimpleName();
 	
 	private int _readCharNum;
@@ -159,15 +161,5 @@ public class IOProcess implements MigratableProcess {
         sb.append(this.getClass().getSimpleName());
         sb.append("(" + id + "): ");        
         return sb.toString();
-	}
-
-	@Override
-	public void setPid(int pid) {
-		this.id = pid;
-	}
-	
-	@Override
-	public int getPid() {
-		return this.id;
 	}
 }

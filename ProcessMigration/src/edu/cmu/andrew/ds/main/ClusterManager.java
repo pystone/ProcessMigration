@@ -50,6 +50,8 @@ public class ClusterManager {
 	 * Accepting user input and handling them.
 	 */
 	public void startServer() {
+		System.out.println("Type 'help' for more information");
+		
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         System.out.print("> ");
         while (true) {

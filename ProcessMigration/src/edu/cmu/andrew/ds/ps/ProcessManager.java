@@ -1,7 +1,6 @@
 package edu.cmu.andrew.ds.ps;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
@@ -20,15 +19,25 @@ import edu.cmu.andrew.ds.network.MessageStruct;
 /**
  * ProcessManager
  * 
- * A comprehensive class to monitor for requests to launch, remove, and migrate processes.
- * It can be polled to determine when processes die, receive periodic updates from them, and/or rely
- * upon them to tell you as part of their depth. 
+ * When client as server, ProcessManager is the main control class of the program.
+ * It start a new thread running ClientManager to receive messages. In the main thread,
+ * a loop is running to receive and handle user input. Also provides some interfaces for 
+ * ClientManager to call to handle the request from server.
  * 
- * When being asked to create new processes, it is accepted by a name for the instance.  
- * Several instances of the same type at the same time are supported
- * 
- * Instantiating until runtime is supported by use of Java’s java.lang.Class<T> class and 
- * java.lang.reflect.Constructor<T> class to handle this at runtime.
+ * Support input command:
+ * 		create PROC_NAME [OPTIONAL_ARG]: 
+ * 			Craete a new instance of class PROC_NAME inherited MigratableProcess.
+ * 			All the arguments following PROC_NAME will be passed to the constructor
+ * 			of that instance.
+ * 		call PID METHOD_NAME [OPTIONAL_ARG]: 
+ * 			Call a method METHOD_NAME of process PID with optional arguments 
+ * 			OPTIONAL_ARG. 
+ * 		ps:
+ * 			Show the info of all the running processes on all clients.
+ * 		help: 
+ * 			Show all the accepted input commands.
+ * 		exit: 
+ * 			Close the client program. 
  * 
  * @author KAIILANG CHEN(kailianc)
  * @author YANG PAN(yangpan)
@@ -40,47 +49,35 @@ public class ProcessManager {
 	
 	private String _packageName;
 	private ClientManager _cltMgr = null;
+	
+	/* 
+	 * a prompt before user input, after connection is established, server will send 
+	 * the client id back, and the prompt will be changed to "#ID > ", which is 
+	 * convenient for distinguish different client. 
+	 */
 	public String _prompt = "> ";
 
+	/*
+	 * maintain a map between pid and process.
+	 */
 	private volatile Map<Integer, MigratableProcess> _pmap = new ConcurrentSkipListMap<Integer, MigratableProcess>();
-		
-	private volatile AtomicInteger _pidCnt; 	
 	
+	/* manage the increasing pid to assign a new process an id */
+	private volatile AtomicInteger _pidCnt; 	
 	
 	public ProcessManager(String svrAddr, int port) {
 		_pidCnt = new AtomicInteger(0);
 		_packageName = this.getClass().getPackage().getName();
 		_cltMgr = new ClientManager(svrAddr, port);
 		_cltMgr._procMgr = this;
+		
 		/* new thread to receive msg */
 		new Thread(_cltMgr).start();
 	}
-	
-	private void addProcess(MigratableProcess ps) {
-		_pmap.put(Integer.valueOf(_pidCnt.getAndIncrement()), ps);
-	}
-	
-	private boolean deleteProcess(int idx) {
-		if (_pmap.remove(Integer.valueOf(idx)) == null) {
-			println("delete failed!");
-			return false;
-		}
-		return true;
-	}
-	
-	private int getPid(MigratableProcess ps) {
-		for (Map.Entry<Integer, MigratableProcess> entry : _pmap.entrySet()) {
-		    if (entry.getValue() == ps) {
-		    	return entry.getKey().intValue();
-		    }
-		}
-		return -1;
-	}
-	
-	private MigratableProcess getProcess(int pid) {
-		return (MigratableProcess)_pmap.get(Integer.valueOf(pid));
-	}
 		
+	/*
+	 * Accepting user input and handling them.
+	 */
 	public void startClient() {
 		System.out.println("Type 'help' for more information");
 		
@@ -99,19 +96,32 @@ public class ProcessManager {
         }
 	}
 	
+/* ================== Input handlers begin ==================*/
+	/*
+	 * Support input command:
+	 * 		create PROC_NAME [OPTIONAL_ARG]: 
+	 * 			Craete a new instance of class PROC_NAME inherited MigratableProcess.
+	 * 			All the arguments following PROC_NAME will be passed to the constructor
+	 * 			of that instance.
+	 * 		call PID METHOD_NAME [OPTIONAL_ARG]: 
+	 * 			Call a method METHOD_NAME of process PID with optional arguments 
+	 * 			OPTIONAL_ARG. 
+	 * 		ps:
+	 * 			Show the info of all the running processes on all clients.
+	 * 		help: 
+	 * 			Show all the accepted input commands.
+	 * 		exit: 
+	 * 			Close the client program. 
+	 */
 	private void execCmd(String[] arg) {
 		switch(arg[0]) {
 		case "create":
 		case "ct":
-			if (arg.length == 1) {
+			if (arg.length < 2) {
 				System.out.println("Invalid command.");
 				break;
 			}
-			if (arg[0].equals("IOProcess") && arg.length!=4) {
-				System.out.println("Please specify the input and output file.");
-				break;
-			}
-			create(Arrays.copyOfRange(arg, 1, arg.length));
+			create(arg);
 			break;
 		case "call":
 			if (arg.length < 3) {
@@ -136,17 +146,17 @@ public class ProcessManager {
 	}
 	
     private void create(String[] str) {
-    	String psName = str[0];
+    	String psName = str[1];
     	MigratableProcess ps = null;
 		try {
-			String[] s = Arrays.copyOfRange(str, 1, str.length);
-			Class<?> cls = Class.forName(_packageName+ "." + str[0]);
+			String[] s = Arrays.copyOfRange(str, 2, str.length);
+			Class<?> cls = Class.forName(_packageName+ "." + psName);
 			Constructor<?> ctor = cls.getConstructor(String[].class);
 			
 			ps = (MigratableProcess)ctor.newInstance((Object)s);
 			
 		} catch (InstantiationException | IllegalAccessException
-				| IllegalArgumentException | InvocationTargetException | SecurityException e) {
+				| IllegalArgumentException | SecurityException e) {
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
 			println("Class " + psName + " not found.");
@@ -154,18 +164,18 @@ public class ProcessManager {
 		} catch (NoSuchMethodException e) {
 			println(psName + " should have a constructor with prototype " + psName + "(String[]);");
 			return;
+		} catch (InvocationTargetException e) {
+			println("Please provide appropriate arguments to the constructor of " + psName + "!");
+			return;
 		}
 		
 		addProcess(ps);
-		ps.setPid(getPid(ps));
+		ps._pid = getPid(ps);
 		System.out.println(psName + " class has been created, pid: " + getPid(ps));
     	Thread thread = new Thread(ps);
         thread.start();
         display();
 	}
-	
-	
-	
 	
 	private void callMethod(String[] argv) {
 		int pid = 0;
@@ -199,10 +209,6 @@ public class ProcessManager {
 		}
 	}
 	
-	private void println(String msg) {
-		System.out.println("ProcessManager: " + msg);
-	}
-	
 	/*
 	 * 
 	 */
@@ -230,9 +236,9 @@ public class ProcessManager {
 		_cltMgr.close();
 		System.exit(0);
 	}
+/* ================== Input handlers end ==================*/
 	
-	
-	/* INTERFACE for network */
+/* ================== Interfaces for ClientManager begin ==================*/
 	public void displayToServer() {
 		ArrayList<ArrayList<String>> content = new ArrayList<ArrayList<String>>();
 		for (Map.Entry<Integer, MigratableProcess> entry : _pmap.entrySet()) {
@@ -246,8 +252,9 @@ public class ProcessManager {
 		try {
 			_cltMgr.sendMsg(msg);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.out.println("Connection to server is broken. Please restart client.");
+			_cltMgr.close();
+			System.exit(-1);
 		}
 	}
 	
@@ -285,7 +292,42 @@ public class ProcessManager {
 		new Thread(proc).start();
 		
 		addProcess(proc);
-		proc.setPid(getPid(proc));
+		proc._pid = getPid(proc);
 		System.out.println("New process immigrated! PID: " + getPid(proc));
+	}
+/* ================== Interfaces for ClientManager end ==================*/
+	
+/* ================== Process info manage methods begin ==================*/
+	private void addProcess(MigratableProcess ps) {
+		_pmap.put(Integer.valueOf(_pidCnt.getAndIncrement()), ps);
+	}
+	
+	private boolean deleteProcess(int idx) {
+		if (_pmap.remove(Integer.valueOf(idx)) == null) {
+			println("delete failed!");
+			return false;
+		}
+		return true;
+	}
+	
+	private int getPid(MigratableProcess ps) {
+		for (Map.Entry<Integer, MigratableProcess> entry : _pmap.entrySet()) {
+		    if (entry.getValue() == ps) {
+		    	return entry.getKey().intValue();
+		    }
+		}
+		return -1;
+	}
+	
+	private MigratableProcess getProcess(int pid) {
+		return (MigratableProcess)_pmap.get(Integer.valueOf(pid));
+	}
+/* ================== Process info manage methods end ==================*/
+	
+	/*
+	 * Internal debug print method.
+	 */
+	private void println(String msg) {
+		System.out.println("ProcessManager: " + msg);
 	}
 }

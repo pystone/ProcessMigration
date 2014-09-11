@@ -6,7 +6,34 @@ package edu.cmu.andrew.ds.network;
 import java.io.Serializable;
 
 /**
- * @author PY
+ * MessageStruct
+ * 
+ * A structure for communicating between server and client. Two fields indicate 
+ * the message type(_code) and message body(_content).
+ * 
+ * Message types and description: 
+ * 		type	description						direction
+ * 		0		request process info			server -> client
+ * 		1		respond process info			client -> server
+ * 		2		request to migrate a process	server -> client
+ * 		3		emigrate a process				client -> server
+ * 		4		immigrate a process				server -> client
+ * 		5		set client id					server -> client
+ * 
+ * Examples:
+ * 		1. display the info of all the running processes on all clients
+ * 				server			client
+ * 				0		->
+ * 						<-		1
+ * 		2. migrate a process
+ * 				server			client
+ * 				2		->
+ * 						<-		3
+ * 				4		-> 
+ * 
+ * @author KAIILANG CHEN(kailianc)
+ * @author YANG PAN(yangpan)
+ * @version 1.0
  *
  */
 public class MessageStruct extends Object implements Serializable {

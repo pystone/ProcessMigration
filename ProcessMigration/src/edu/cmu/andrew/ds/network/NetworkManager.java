@@ -9,7 +9,7 @@ import java.net.Socket;
 /**
  * NetworkManager
  * 
- * Base class of Server and Client to provide Serializtion/Deserialization functions in bi-directional migration.
+ * Base class of ServerManager and ClientManager to provide network operations.
  *
  * @author KAIILANG CHEN(kailianc)
  * @author YANG PAN(yangpan)
@@ -18,14 +18,22 @@ import java.net.Socket;
  */
 public abstract class NetworkManager implements Runnable{
 	
-	public void sendMsg(Socket socket, MessageStruct msg) throws IOException {
+	/*
+	 * Send a message to socket
+	 */
+	public void sendMsg(Socket socket, MessageStruct msg) 
+			throws IOException {
 		ObjectOutputStream out;
 		
 		out = new ObjectOutputStream(socket.getOutputStream());
 		out.writeObject(msg);
 	}
 	
-	public void receiveMsg(Socket socket) throws ClassNotFoundException, IOException {
+	/*
+	 * Try to receive a message from socket.
+	 */
+	public void receiveMsg(Socket socket) 
+			throws ClassNotFoundException, IOException {
 		ObjectInputStream inStream = new ObjectInputStream(socket.getInputStream());
 		Object inObj = inStream.readObject();
 		
@@ -36,6 +44,9 @@ public abstract class NetworkManager implements Runnable{
 		
 	}
 	
+	/*
+	 * Close socket
+	 */
 	public void close(Socket socket) {
 		try {
 			socket.close();
@@ -44,13 +55,9 @@ public abstract class NetworkManager implements Runnable{
 		}
 	}
 	
-//	public void close() {
-//		try {
-//			_socket.close();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-//	}
-	
+	/*
+	 * An interface for ServerManager and ClientManager to implement, handling all
+	 * the incoming messages.
+	 */
 	public abstract void msgHandler(MessageStruct msg, Socket src);
 }

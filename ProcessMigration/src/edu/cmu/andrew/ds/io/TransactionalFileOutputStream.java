@@ -32,6 +32,7 @@ public class TransactionalFileOutputStream  extends OutputStream implements Seri
 	 * it any time a file handle is created or renewed.
 	 */
 	
+	private static final long serialVersionUID = -2615966902694975193L;
 	private File _dst;
 	private long _pos;
 	private transient RandomAccessFile _hdl;

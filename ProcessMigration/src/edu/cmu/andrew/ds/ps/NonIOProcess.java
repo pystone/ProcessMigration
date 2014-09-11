@@ -11,7 +11,9 @@ package edu.cmu.andrew.ds.ps;
  * @version 1.0
  * 
  */
-public class NonIOProcess implements MigratableProcess {
+public class NonIOProcess extends MigratableProcess {
+	private static final long serialVersionUID = -6434015071720225867L;
+
 	private static final String TAG = NonIOProcess.class.getSimpleName();
 	
 	public int cnt;
@@ -22,7 +24,6 @@ public class NonIOProcess implements MigratableProcess {
 	 */
 	
 	private volatile boolean suspending;
-	private int id;
 
 	/*
 	 *  Every class implements MigratableProcess should have a such Constructor.
@@ -69,18 +70,7 @@ public class NonIOProcess implements MigratableProcess {
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
         sb.append(this.getClass().getSimpleName());
-        sb.append("(" + id + "): ");        
+        sb.append("(" + _pid + "): ");        
         return sb.toString();
 	}
-	
-	@Override
-	public void setPid(int pid) {
-		this.id = pid;
-	}
-	
-	@Override
-	public int getPid() {
-		return this.id;
-	}
-	
 }
