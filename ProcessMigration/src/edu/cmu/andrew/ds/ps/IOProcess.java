@@ -42,7 +42,7 @@ public class IOProcess extends MigratableProcess {
 	private volatile boolean _suspending;
 	private int id;
 	
-	private static final int MAX_LOOP_NUM = 5;
+	private static final int MAX_LOOP_NUM = 8;
 	private int loopNum = 0;
 	/*
 	 *  Every class implements MigratableProcess should have a such Constructor.
@@ -137,8 +137,6 @@ public class IOProcess extends MigratableProcess {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
-		while (_suspending);
 	}
 
 	@Override

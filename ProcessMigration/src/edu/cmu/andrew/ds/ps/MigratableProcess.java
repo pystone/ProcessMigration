@@ -25,17 +25,16 @@ public abstract class MigratableProcess implements Runnable, Serializable {
 	public abstract void suspend();
 	
 	/*
-	 * This method will be called after migration.
+	 * This method will be called after migration. Resume all the work that was 
+	 * suspended.
 	 */
 	public abstract void resume();
 	
 	
 	/*
-	 *  This method can, for example, print the class name of the process 
-	 *  as well as the original set of arguments with which it was called. 
+	 *  This method is used for debugging. It can print the class name of the 
+	 *  process as well as the original set of arguments with which it was called. 
 	 */
 	public abstract String toString();
 	
-//	public void setPid(int pid);
-//	public int getPid();
 }

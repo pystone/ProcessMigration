@@ -39,33 +39,41 @@ public class TransactionalFileInputStream extends InputStream implements Seriali
 	private File _src;
 	private long _pos;
 	private transient RandomAccessFile _hdl;
-	private boolean _migrated;
+	private boolean _migrating;
 	private boolean _isReading = false;
 	
 	public TransactionalFileInputStream(String path) 
 			throws IOException {
 		this._src = new File(path);
         this._pos = 0;
-        this._migrated = false;
+        this._migrating = false;
 	}
 	
 	/* read in one byte */
 	@Override
     public synchronized int read() throws IOException {
+		/* if is migrating, wait */
+		while (_migrating == true) {
+			println("waiting for completion of migration");
+			try {
+				wait();
+			} catch(InterruptedException e) { } 
+			finally { }
+		}
+		
         /* set the reading lock to make sure it won't enter migrating mode */
 		setReading();
-
-		/* notify other waiting threads before migrating */
-		notify();
 		
-		if (_migrated || _hdl == null) {
+		if (_hdl == null) {
             _hdl = new RandomAccessFile(_src, "r");
-            _migrated = false;
             _hdl.seek(_pos);
         }
         int result = _hdl.read();
         _pos++;
 				
+        /* notify other waiting threads before migrating */
+		notify();
+		
 		/* reset the reading lock to make it ready to enter migrating mode */
 		resetReading();
         
@@ -76,7 +84,7 @@ public class TransactionalFileInputStream extends InputStream implements Seriali
 	public synchronized void suspend() 
 			throws IOException {
 		/* ensure one instance is suspended only once */
-		if (!_migrated) {
+		if (_migrating == true) {
 			println("WARNING: try to suspend a suspended in stream!");
 			return;
 		}
@@ -89,7 +97,10 @@ public class TransactionalFileInputStream extends InputStream implements Seriali
 			} catch(InterruptedException e) { } 
 			finally { }
 		}
-		_migrated = false;
+		_migrating = true;
+		
+		close();
+		_hdl = null;
 		
 		println("in stream suspended");
 	}
@@ -98,14 +109,15 @@ public class TransactionalFileInputStream extends InputStream implements Seriali
 	public synchronized void resume() 
 			throws IOException {
 		/* resuming a non-migrating stream is meaningless */
-		if (!_migrated) {
+		if (_migrating == false) {
 			return;
 		}
 		
-		// TODO: deserialize other stuffs here
+		_hdl = new RandomAccessFile(_src, "r");
+        _hdl.seek(_pos);
 		
 		/* mark the end of the migration and notify other waiting threads */
-		_migrated = true;
+		_migrating = false;
 		notify();
 		
 		println("in stream resumed");
@@ -130,8 +142,4 @@ public class TransactionalFileInputStream extends InputStream implements Seriali
 		_isReading = false;
 		notify();
 	}
-	
-	public void setMigrated(boolean migrated) {
-        this._migrated = migrated;
-    }
 }

@@ -16,23 +16,9 @@ CLASSES = \
 	./edu/cmu/andrew/ds/network/ServerManager.java \
 	./edu/cmu/andrew/ds/ps/IOProcess.java \
 	./edu/cmu/andrew/ds/ps/NonIOProcess.java \
+	./edu/cmu/andrew/ds/ps/GrepProcess.java \
 	./edu/cmu/andrew/ds/ps/MigratableProcess.java \
 	./edu/cmu/andrew/ds/ps/ProcessManager.java \
-
-RMCLASSES = \
-	./edu/cmu/andrew/ds/main/PMMain.class \
-	./edu/cmu/andrew/ds/main/ClusterManager.class \
-	./edu/cmu/andrew/ds/io/TransactionalFileInputStream.class \
-	./edu/cmu/andrew/ds/io/TransactionalFileOutputStream.class \
-	./edu/cmu/andrew/ds/network/ClientManager.class \
-	./edu/cmu/andrew/ds/network/NetworkManager.class \
-	./edu/cmu/andrew/ds/network/MessageStruct.class \
-	./edu/cmu/andrew/ds/network/ServerHandler.class \
-	./edu/cmu/andrew/ds/network/ServerManager.class \
-	./edu/cmu/andrew/ds/ps/IOProcess.class \
-	./edu/cmu/andrew/ds/ps/NonIOProcess.class \
-	./edu/cmu/andrew/ds/ps/MigratableProcess.class \
-	./edu/cmu/andrew/ds/ps/ProcessManager.class \
 
 MAIN = edu/cmu/andrew/ds/main/PMMain
 	
@@ -44,5 +30,5 @@ run:
 	java $(MAIN)
 
 clean:	
-	rm $(RMCLASSES)
+	find . -name "*.class" -type f -delete
 	
